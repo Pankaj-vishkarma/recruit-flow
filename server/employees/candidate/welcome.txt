@@ -1,0 +1,7 @@
+
+Welcome candidate to the company!
+
+Your development environment has been created successfully.
+
+Best Regards,
+HR Team
