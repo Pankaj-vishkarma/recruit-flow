@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { sendMessage } from "../lib/api";
 import MessageBubble from "./MessageBubble";
 
@@ -8,10 +8,28 @@ export default function ChatBox() {
 
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
+    const bottomRef = useRef(null);
+
+    // ---------------------------
+    // Auto Scroll
+    // ---------------------------
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
+
+
+
+    // ---------------------------
+    // Send Message
+    // ---------------------------
     const handleSend = async () => {
 
-        if (!input) return;
+        if (!input.trim() || loading) return;
+
+        setError(null);
 
         const userMessage = {
             role: "user",
@@ -20,38 +38,195 @@ export default function ChatBox() {
 
         setMessages(prev => [...prev, userMessage]);
 
-        const res = await sendMessage(input);
-
-        const botMessage = {
-            role: "assistant",
-            text: JSON.stringify(res)
-        };
-
-        setMessages(prev => [...prev, botMessage]);
-
         setInput("");
+        setLoading(true);
+
+        try {
+
+            const res = await sendMessage(input);
+
+            const botMessage = {
+                role: "assistant",
+                text: res?.data
+                    ? JSON.stringify(res.data, null, 2)
+                    : res?.message || "No response from system"
+            };
+
+            setMessages(prev => [...prev, botMessage]);
+
+        } catch (err) {
+
+            console.error(err);
+
+            setError("Failed to communicate with server.");
+
+        } finally {
+
+            setLoading(false);
+        }
     };
 
-    return (
-        <div>
 
-            <div style={{ marginBottom: 20 }}>
+
+    // ---------------------------
+    // Enter key support
+    // ---------------------------
+    const handleKeyPress = (e) => {
+
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+        }
+    };
+
+
+
+    return (
+
+        <div
+            style={{
+                maxWidth: "900px",
+                margin: "auto",
+                display: "flex",
+                flexDirection: "column",
+                height: "90vh",
+                borderRadius: "12px",
+                background: "#ffffff",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+                overflow: "hidden"
+            }}
+        >
+
+            {/* --------------------------- */}
+            {/* Chat Header */}
+            {/* --------------------------- */}
+
+            <div
+                style={{
+                    padding: "16px 20px",
+                    borderBottom: "1px solid #eee",
+                    fontWeight: "600",
+                    background: "#f9fafb"
+                }}
+            >
+                RecruitFlow AI Assistant
+            </div>
+
+
+
+            {/* --------------------------- */}
+            {/* Chat Messages */}
+            {/* --------------------------- */}
+
+            <div
+                style={{
+                    flex: 1,
+                    overflowY: "auto",
+                    padding: "20px",
+                    background: "#f8fafc"
+                }}
+            >
+
+                {messages.length === 0 && (
+                    <div
+                        style={{
+                            textAlign: "center",
+                            color: "#888",
+                            marginTop: "40px"
+                        }}
+                    >
+                        Start a conversation with the HR assistant
+                    </div>
+                )}
 
                 {messages.map((msg, i) => (
                     <MessageBubble key={i} message={msg} />
                 ))}
 
+                {loading && (
+                    <div
+                        style={{
+                            color: "#666",
+                            padding: "10px",
+                            fontStyle: "italic"
+                        }}
+                    >
+                        Assistant is typing...
+                    </div>
+                )}
+
+                <div ref={bottomRef} />
+
             </div>
 
-            <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask something..."
-            />
 
-            <button onClick={handleSend}>
-                Send
-            </button>
+
+            {/* --------------------------- */}
+            {/* Error Message */}
+            {/* --------------------------- */}
+
+            {error && (
+                <div
+                    style={{
+                        color: "red",
+                        padding: "10px 20px",
+                        fontSize: "14px"
+                    }}
+                >
+                    {error}
+                </div>
+            )}
+
+
+
+            {/* --------------------------- */}
+            {/* Input Area */}
+            {/* --------------------------- */}
+
+            <div
+                style={{
+                    display: "flex",
+                    gap: "10px",
+                    padding: "15px",
+                    borderTop: "1px solid #eee",
+                    background: "#fff"
+                }}
+            >
+
+                <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    placeholder="Ask something about the candidate..."
+                    rows={1}
+                    style={{
+                        flex: 1,
+                        padding: "12px",
+                        borderRadius: "8px",
+                        border: "1px solid #ddd",
+                        outline: "none",
+                        resize: "none",
+                        fontSize: "14px"
+                    }}
+                />
+
+                <button
+                    onClick={handleSend}
+                    disabled={loading}
+                    style={{
+                        padding: "12px 20px",
+                        borderRadius: "8px",
+                        border: "none",
+                        background: loading ? "#aaa" : "#2563eb",
+                        color: "#fff",
+                        cursor: loading ? "not-allowed" : "pointer",
+                        fontWeight: "500"
+                    }}
+                >
+                    {loading ? "Sending..." : "Send"}
+                </button>
+
+            </div>
 
         </div>
     );

@@ -1,3 +1,6 @@
+import logging
+from typing import Optional, Callable
+
 from langgraph.graph import StateGraph, END
 
 from app.graph.state_schema import AgentState
@@ -9,28 +12,118 @@ from app.agents.scheduler_agent import scheduler_agent
 from app.agents.onboarding_agent import onboarding_agent
 
 
+logger = logging.getLogger(__name__)
+
+# --------------------------------------------------
+# Global graph instance (singleton)
+# Prevents rebuilding graph on every request
+# --------------------------------------------------
+_graph_instance = None
+
+
+# --------------------------------------------------
+# Safe node wrapper (crash protection)
+# --------------------------------------------------
+def safe_node(node_name: str, func: Callable):
+    """
+    Wrap node execution to prevent system crashes.
+    """
+
+    def wrapper(state: AgentState):
+
+        try:
+
+            logger.info(f"[LangGraph] Executing node: {node_name}")
+
+            result = func(state)
+
+            logger.info(f"[LangGraph] Completed node: {node_name}")
+
+            return result
+
+        except Exception as e:
+
+            logger.exception(f"[LangGraph] Node failed: {node_name} | Error: {e}")
+
+            # Return state unchanged to prevent workflow crash
+            return state
+
+    return wrapper
+
+
+# --------------------------------------------------
+# Build LangGraph workflow
+# --------------------------------------------------
 def build_graph():
+    """
+    Build LangGraph workflow for Recruit-Flow HR system.
 
-    workflow = StateGraph(AgentState)
+    Pipeline:
+    Research → Screening → Technical Interview → Scheduling → Onboarding
+    """
 
-    # nodes
-    workflow.add_node("research", research_agent)
-    workflow.add_node("screen", screener_agent)
-    workflow.add_node("tech", tech_interviewer)
-    workflow.add_node("schedule", scheduler_agent)
-    workflow.add_node("onboard", onboarding_agent)
+    global _graph_instance
 
-    # starting node
-    workflow.set_entry_point("research")
+    # Prevent rebuilding graph multiple times
+    if _graph_instance is not None:
+        logger.info("Returning existing LangGraph instance")
+        return _graph_instance
 
-    # edges
-    workflow.add_edge("research", "screen")
-    workflow.add_edge("screen", "tech")
-    workflow.add_edge("tech", "schedule")
-    workflow.add_edge("schedule", "onboard")
-    workflow.add_edge("onboard", END)
+    try:
 
-    # compile graph
-    graph = workflow.compile()
+        logger.info("Initializing LangGraph workflow...")
 
-    return graph
+        workflow = StateGraph(AgentState)
+
+        # -----------------------------
+        # Register nodes with safety wrapper
+        # -----------------------------
+
+        workflow.add_node("research", safe_node("research", research_agent))
+
+        workflow.add_node("screen", safe_node("screen", screener_agent))
+
+        workflow.add_node("tech", safe_node("tech", tech_interviewer))
+
+        workflow.add_node("schedule", safe_node("schedule", scheduler_agent))
+
+        workflow.add_node("onboard", safe_node("onboard", onboarding_agent))
+
+        # -----------------------------
+        # Entry point
+        # -----------------------------
+
+        workflow.set_entry_point("research")
+
+        # -----------------------------
+        # Workflow edges
+        # -----------------------------
+
+        workflow.add_edge("research", "screen")
+
+        workflow.add_edge("screen", "tech")
+
+        workflow.add_edge("tech", "schedule")
+
+        workflow.add_edge("schedule", "onboard")
+
+        workflow.add_edge("onboard", END)
+
+        # -----------------------------
+        # Compile graph
+        # -----------------------------
+
+        graph = workflow.compile()
+
+        logger.info("LangGraph workflow compiled successfully")
+
+        # Cache instance
+        _graph_instance = graph
+
+        return graph
+
+    except Exception as e:
+
+        logger.exception(f"Failed to build LangGraph workflow: {e}")
+
+        raise RuntimeError("LangGraph initialization failed")

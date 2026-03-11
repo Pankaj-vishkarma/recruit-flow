@@ -1,33 +1,82 @@
-def detect_skills(message: str):
+import logging
+from typing import List
 
-    skills = []
+logger = logging.getLogger(__name__)
+
+# Supported skills dictionary
+SUPPORTED_SKILLS = {
+    "python": ["python", "flask", "fastapi"],
+    "django": ["django"],
+    "javascript": ["javascript", "node", "nodejs"],
+    "react": ["react", "reactjs"],
+}
+
+# Interview questions mapped to primary skill
+SKILL_QUESTIONS = {
+    "python": "Can you explain Python decorators?",
+    "django": "What is Django ORM?",
+    "javascript": "What is the difference between var, let, and const?",
+    "react": "Explain React hooks.",
+}
+
+
+def detect_skills(message: str) -> List[str]:
+    """
+    Detect technical skills from candidate message.
+
+    Args:
+        message (str): Candidate message
+
+    Returns:
+        List[str]: List of detected skills
+    """
+
+    if not message:
+        return []
 
     message = message.lower()
 
-    if "python" in message:
-        skills.append("python")
+    detected_skills = set()
 
-    if "django" in message:
-        skills.append("django")
+    for skill, keywords in SUPPORTED_SKILLS.items():
 
-    if "javascript" in message:
-        skills.append("javascript")
+        for keyword in keywords:
 
-    if "react" in message:
-        skills.append("react")
+            if keyword in message:
+                detected_skills.add(skill)
+
+    skills = list(detected_skills)
+
+    logger.info(f"Detected skills: {skills}")
 
     return skills
 
 
-def generate_followup_question(skills):
+def generate_followup_question(skills: List[str]) -> str:
+    """
+    Generate a technical interview question based on detected skills.
 
-    if "python" in skills:
-        return "Can you explain Python decorators?"
+    Args:
+        skills (List[str]): Candidate skills
 
-    if "django" in skills:
-        return "What is Django ORM?"
+    Returns:
+        str: Interview question
+    """
 
-    if "react" in skills:
-        return "Explain React hooks."
+    if not skills:
+        logger.info("No skills detected, using fallback question")
+        return "Tell me more about your technical experience."
+
+    for skill in skills:
+
+        if skill in SKILL_QUESTIONS:
+
+            question = SKILL_QUESTIONS[skill]
+
+            logger.info(f"Generated question for skill: {skill}")
+
+            return question
+
+    logger.info("No mapped question found, using fallback")
 
     return "Tell me more about your technical experience."

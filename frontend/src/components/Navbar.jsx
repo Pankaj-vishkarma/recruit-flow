@@ -1,22 +1,118 @@
 "use client";
 
 import Link from "next/link";
+import { logout, isAuthenticated } from "@/lib/auth";
 
 export default function Navbar() {
+
+    const auth = typeof window !== "undefined" && isAuthenticated();
+
     return (
         <nav
             style={{
                 display: "flex",
-                gap: "20px",
-                padding: "15px",
-                background: "#111",
-                color: "white",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "14px 24px",
+                background: "#ffffff",
+                borderBottom: "1px solid #e5e7eb",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
             }}
         >
-            <Link href="/">Home</Link>
-            <Link href="/chat">Chat</Link>
-            <Link href="/calendar">Calendar</Link>
-            <Link href="/dashboard">Dashboard</Link>
+
+            {/* App Title */}
+
+            <div
+                style={{
+                    fontWeight: "600",
+                    fontSize: "18px"
+                }}
+            >
+                Recruit Flow
+            </div>
+
+
+
+            {/* Navigation Links */}
+
+            <div
+                style={{
+                    display: "flex",
+                    gap: "20px",
+                    alignItems: "center"
+                }}
+            >
+
+                <Link href="/dashboard" style={linkStyle}>
+                    Dashboard
+                </Link>
+
+                <Link href="/candidates" style={linkStyle}>
+                    Candidates
+                </Link>
+
+                <Link href="/calendar" style={linkStyle}>
+                    Calendar
+                </Link>
+
+                <Link href="/chat" style={linkStyle}>
+                    Chat
+                </Link>
+
+            </div>
+
+
+
+            {/* Auth Section */}
+
+            <div>
+
+                {auth ? (
+
+                    <button
+                        onClick={logout}
+                        style={logoutBtn}
+                    >
+                        Logout
+                    </button>
+
+                ) : (
+
+                    <div style={{ display: "flex", gap: "15px" }}>
+
+                        <Link href="/login" style={linkStyle}>
+                            Login
+                        </Link>
+
+                        <Link href="/register" style={linkStyle}>
+                            Register
+                        </Link>
+
+                    </div>
+
+                )}
+
+            </div>
+
         </nav>
     );
 }
+
+
+
+const linkStyle = {
+    textDecoration: "none",
+    color: "#374151",
+    fontSize: "14px",
+    fontWeight: "500"
+};
+
+const logoutBtn = {
+    padding: "8px 14px",
+    border: "none",
+    borderRadius: "6px",
+    background: "#ef4444",
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: "13px"
+};
