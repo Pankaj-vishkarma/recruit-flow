@@ -24,6 +24,10 @@ def detect_slot_from_message(message: str) -> str:
         if not message:
             return settings.DEFAULT_INTERVIEW_SLOT
 
+        # ensure message is string
+        if not isinstance(message, str):
+            message = str(message)
+
         message = message.lower()
 
         slot_patterns = {
@@ -62,6 +66,10 @@ async def scheduler_agent(state: Dict[str, Any]) -> Dict[str, Any]:
     """
 
     try:
+
+        if not isinstance(state, dict):
+            logger.warning("Scheduler agent received invalid state")
+            return {}
 
         messages = state.get("messages", [])
 
@@ -138,7 +146,10 @@ async def scheduler_agent(state: Dict[str, Any]) -> Dict[str, Any]:
                     f"Calendar automation result (attempt {attempt+1}): {automation_result}"
                 )
 
-                if automation_result.get("status") == "success":
+                if (
+                    isinstance(automation_result, dict)
+                    and automation_result.get("status") == "success"
+                ):
 
                     break
 
@@ -148,7 +159,11 @@ async def scheduler_agent(state: Dict[str, Any]) -> Dict[str, Any]:
                     f"Calendar automation attempt {attempt+1} failed: {calendar_error}"
                 )
 
-        if not automation_result or automation_result.get("status") != "success":
+        if (
+            not automation_result
+            or not isinstance(automation_result, dict)
+            or automation_result.get("status") != "success"
+        ):
 
             logger.warning("Calendar automation did not confirm success")
 
@@ -206,7 +221,9 @@ async def scheduler_agent(state: Dict[str, Any]) -> Dict[str, Any]:
 
         logger.exception(f"Scheduler agent failed: {e}")
 
-        state["schedule_error"] = str(e)
-        state["current_step"] = "onboard"
+        if isinstance(state, dict):
+            state["schedule_error"] = str(e)
+            state["current_step"] = "onboard"
+            return state
 
-        return state
+        return {"schedule_error": str(e), "current_step": "onboard"}

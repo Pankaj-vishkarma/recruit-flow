@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { sendMessage } from "../lib/api";
+import { sendMessage } from "@/lib/api";
 import MessageBubble from "./MessageBubble";
 
 export default function ChatBox() {
@@ -12,19 +12,70 @@ export default function ChatBox() {
     const [error, setError] = useState(null);
 
     const bottomRef = useRef(null);
+    const textareaRef = useRef(null);
 
-    // ---------------------------
-    // Auto Scroll
-    // ---------------------------
+
+
+    /* --------------------------- */
+    /* Load chat history */
+    /* --------------------------- */
+
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+
+        const saved = localStorage.getItem("chat_history");
+
+        if (saved) {
+            setMessages(JSON.parse(saved));
+        }
+
+    }, []);
+
+
+
+    /* --------------------------- */
+    /* Save chat history */
+    /* --------------------------- */
+
+    useEffect(() => {
+
+        localStorage.setItem("chat_history", JSON.stringify(messages));
+
     }, [messages]);
 
 
 
-    // ---------------------------
-    // Send Message
-    // ---------------------------
+    /* --------------------------- */
+    /* Auto Scroll */
+    /* --------------------------- */
+
+    useEffect(() => {
+
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+
+    }, [messages, loading]);
+
+
+
+    /* --------------------------- */
+    /* Auto Resize Textarea */
+    /* --------------------------- */
+
+    useEffect(() => {
+
+        if (textareaRef.current) {
+            textareaRef.current.style.height = "auto";
+            textareaRef.current.style.height =
+                textareaRef.current.scrollHeight + "px";
+        }
+
+    }, [input]);
+
+
+
+    /* --------------------------- */
+    /* Send Message */
+    /* --------------------------- */
+
     const handleSend = async () => {
 
         if (!input.trim() || loading) return;
@@ -33,23 +84,28 @@ export default function ChatBox() {
 
         const userMessage = {
             role: "user",
-            text: input
+            text: input,
+            time: new Date().toLocaleTimeString()
         };
 
         setMessages(prev => [...prev, userMessage]);
+
+        const messageToSend = input;
 
         setInput("");
         setLoading(true);
 
         try {
 
-            const res = await sendMessage(input);
+            const res = await sendMessage(messageToSend);
 
             const botMessage = {
                 role: "assistant",
-                text: res?.data
-                    ? JSON.stringify(res.data, null, 2)
-                    : res?.message || "No response from system"
+                text:
+                    res?.data
+                        ? JSON.stringify(res.data, null, 2)
+                        : res?.message || "No response from system",
+                time: new Date().toLocaleTimeString()
             };
 
             setMessages(prev => [...prev, botMessage]);
@@ -68,9 +124,10 @@ export default function ChatBox() {
 
 
 
-    // ---------------------------
-    // Enter key support
-    // ---------------------------
+    /* --------------------------- */
+    /* Enter key support */
+    /* --------------------------- */
+
     const handleKeyPress = (e) => {
 
         if (e.key === "Enter" && !e.shiftKey) {
@@ -97,9 +154,7 @@ export default function ChatBox() {
             }}
         >
 
-            {/* --------------------------- */}
             {/* Chat Header */}
-            {/* --------------------------- */}
 
             <div
                 style={{
@@ -114,9 +169,7 @@ export default function ChatBox() {
 
 
 
-            {/* --------------------------- */}
             {/* Chat Messages */}
-            {/* --------------------------- */}
 
             <div
                 style={{
@@ -151,7 +204,7 @@ export default function ChatBox() {
                             fontStyle: "italic"
                         }}
                     >
-                        Assistant is typing...
+                        AI is thinking...
                     </div>
                 )}
 
@@ -161,9 +214,7 @@ export default function ChatBox() {
 
 
 
-            {/* --------------------------- */}
             {/* Error Message */}
-            {/* --------------------------- */}
 
             {error && (
                 <div
@@ -179,9 +230,7 @@ export default function ChatBox() {
 
 
 
-            {/* --------------------------- */}
             {/* Input Area */}
-            {/* --------------------------- */}
 
             <div
                 style={{
@@ -194,6 +243,7 @@ export default function ChatBox() {
             >
 
                 <textarea
+                    ref={textareaRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyPress}

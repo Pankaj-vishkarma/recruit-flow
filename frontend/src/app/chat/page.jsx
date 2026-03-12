@@ -1,8 +1,22 @@
 "use client";
 
-import ChatBox from "../../components/ChatBox";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { isAuthenticated } from "@/lib/auth";
+import ChatBox from "@/components/ChatBox";
 
 export default function ChatPage() {
+
+    const router = useRouter();
+
+    useEffect(() => {
+
+        if (!isAuthenticated()) {
+            router.push("/login");
+        }
+
+    }, [router]);
+
 
     return (
 
@@ -10,14 +24,19 @@ export default function ChatPage() {
             style={{
                 minHeight: "100vh",
                 background: "#f3f4f6",
-                padding: "40px 20px"
+                padding: "40px 20px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center"
             }}
         >
+
+            {/* Page Header */}
 
             <div
                 style={{
                     maxWidth: "900px",
-                    margin: "auto",
+                    width: "100%",
                     textAlign: "center",
                     marginBottom: "30px"
                 }}
@@ -44,9 +63,19 @@ export default function ChatPage() {
 
             </div>
 
-            {/* Chat container */}
 
-            <ChatBox />
+            {/* Chat Container */}
+
+            <div
+                style={{
+                    width: "100%",
+                    maxWidth: "900px"
+                }}
+            >
+
+                <ChatBox />
+
+            </div>
 
         </div>
 

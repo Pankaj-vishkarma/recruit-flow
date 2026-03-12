@@ -32,7 +32,19 @@ def save_candidate_data(name: str, data: Dict[str, Any]) -> bool:
 
     try:
 
-        payload = {**data, "updated_at": datetime.utcnow()}
+        payload = {**data}
+
+        # --------------------------------
+        # Prevent skills conflict
+        # --------------------------------
+        if "skills" in payload and isinstance(payload["skills"], list):
+
+            # skills handled separately via add_candidate_skills
+            skills = payload.pop("skills")
+
+            add_candidate_skills(name, skills)
+
+        payload["updated_at"] = datetime.utcnow()
 
         candidates_collection.update_one(
             {"name": name},
@@ -98,6 +110,10 @@ def update_candidate_fields(name: str, fields: Dict[str, Any]) -> bool:
 
     try:
 
+        if "skills" in fields:
+            skills = fields.pop("skills")
+            add_candidate_skills(name, skills)
+
         candidates_collection.update_one(
             {"name": name}, {"$set": {**fields, "updated_at": datetime.utcnow()}}
         )
@@ -152,6 +168,11 @@ def append_chat_message(name: str, role: str, content: str) -> bool:
             {
                 "$push": {"chat_history": message},
                 "$set": {"updated_at": datetime.utcnow()},
+                "$setOnInsert": {
+                    "created_at": datetime.utcnow(),
+                    "skills": [],
+                    "interview_history": [],
+                },
             },
             upsert=True,
         )
@@ -202,11 +223,19 @@ def add_candidate_skills(name: str, skills: List[str]) -> bool:
 
     try:
 
+        if not isinstance(skills, list):
+            skills = [skills]
+
         candidates_collection.update_one(
             {"name": name},
             {
                 "$addToSet": {"skills": {"$each": skills}},
                 "$set": {"updated_at": datetime.utcnow()},
+                "$setOnInsert": {
+                    "created_at": datetime.utcnow(),
+                    "chat_history": [],
+                    "interview_history": [],
+                },
             },
             upsert=True,
         )
@@ -247,6 +276,11 @@ def add_interview_record(
             {
                 "$push": {"interview_history": record},
                 "$set": {"updated_at": datetime.utcnow()},
+                "$setOnInsert": {
+                    "created_at": datetime.utcnow(),
+                    "chat_history": [],
+                    "skills": [],
+                },
             },
             upsert=True,
         )

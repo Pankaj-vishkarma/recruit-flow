@@ -1,7 +1,7 @@
 import asyncio
 from typing import Dict, Any, List
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 
 from slowapi.util import get_remote_address
 from slowapi import Limiter
@@ -15,6 +15,9 @@ from app.tools.memory_tool import (
 from app.models.chat_model import ChatRequest, ChatResponse
 
 from app.utils.logger import get_logger
+from app.utils.auth_dependency import get_current_candidate_user
+
+from app.services.interview_service import detect_skills
 
 router = APIRouter()
 
@@ -104,11 +107,15 @@ def format_response(state: Dict[str, Any]) -> str:
 
 
 # --------------------------------------------------
-# Chat Endpoint
+# Chat Endpoint (Candidate Only)
 # --------------------------------------------------
 @router.post("/chat/", response_model=ChatResponse)
 @limiter.limit("10/minute")
-async def chat(request: Request, payload: ChatRequest) -> Dict[str, Any]:
+async def chat(
+    request: Request,
+    payload: ChatRequest,
+    user: dict = Depends(get_current_candidate_user),
+) -> Dict[str, Any]:
     """
     Chat endpoint
 
@@ -118,7 +125,11 @@ async def chat(request: Request, payload: ChatRequest) -> Dict[str, Any]:
     try:
 
         message = payload.message
-        candidate_name = payload.candidate_name
+
+        # --------------------------------------------------
+        # Candidate identity from JWT
+        # --------------------------------------------------
+        candidate_name = user["email"]
 
         # -----------------------------
         # Validate request
@@ -129,7 +140,15 @@ async def chat(request: Request, payload: ChatRequest) -> Dict[str, Any]:
 
         message = str(message).strip()
 
-        candidate_name = (candidate_name or "candidate").strip()
+        # --------------------------------
+        # Detect candidate skills from message
+        # --------------------------------
+        detected_skills = detect_skills(message)
+
+        candidate_data = {}
+
+        if detected_skills:
+            candidate_data["skills"] = detected_skills
 
         logger.info(f"Received message from candidate: {candidate_name}")
 
@@ -172,7 +191,7 @@ async def chat(request: Request, payload: ChatRequest) -> Dict[str, Any]:
         state: Dict[str, Any] = {
             "messages": messages,
             "candidate_name": candidate_name,
-            "candidate_data": {},
+            "candidate_data": candidate_data,
             "current_step": "research",
         }
 

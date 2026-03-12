@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from typing import Optional, Callable
 
 from langgraph.graph import StateGraph, END
@@ -23,19 +24,39 @@ _graph_instance = None
 
 # --------------------------------------------------
 # Safe node wrapper (crash protection)
+# Supports both sync and async nodes
 # --------------------------------------------------
 def safe_node(node_name: str, func: Callable):
     """
-    Wrap node execution to prevent system crashes.
+    Wrap node execution to prevent system crashes
+    and support async agent functions.
     """
 
-    def wrapper(state: AgentState):
+    async def wrapper(state: AgentState):
 
         try:
 
             logger.info(f"[LangGraph] Executing node: {node_name}")
 
             result = func(state)
+
+            # --------------------------------------------------
+            # If agent returned coroutine → await it
+            # --------------------------------------------------
+            if asyncio.iscoroutine(result):
+                result = await result
+
+            # --------------------------------------------------
+            # LangGraph requires dict-like state return
+            # --------------------------------------------------
+            if result is None:
+                result = state
+
+            if not isinstance(result, dict):
+                logger.warning(
+                    f"[LangGraph] Node {node_name} returned non-dict result. Using state fallback."
+                )
+                result = state
 
             logger.info(f"[LangGraph] Completed node: {node_name}")
 

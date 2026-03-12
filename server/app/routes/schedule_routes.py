@@ -7,11 +7,12 @@ from slowapi.util import get_remote_address
 from slowapi import Limiter
 
 from app.agents.scheduler_agent import scheduler_agent
-from app.utils.auth_dependency import get_current_hr_user
-
-router = APIRouter(prefix="/schedule", tags=["Schedule"])
+from app.utils.auth_dependency import get_current_candidate_user
+from app.config.database import candidates_collection
 
 from app.utils.logger import get_logger
+
+router = APIRouter(prefix="/schedule", tags=["Schedule"])
 
 logger = get_logger()
 
@@ -21,10 +22,15 @@ logger = get_logger()
 limiter = Limiter(key_func=get_remote_address)
 
 
+# --------------------------------------------------
+# Schedule Interview Endpoint (Candidate Only)
+# --------------------------------------------------
 @router.post("/")
 @limiter.limit("5/minute")
 async def schedule_interview(
-    request: Request, data: Dict[str, Any], user: str = Depends(get_current_hr_user)
+    request: Request,
+    data: Dict[str, Any],
+    user: dict = Depends(get_current_candidate_user),
 ) -> Dict[str, Any]:
     """
     Schedule interview endpoint.
@@ -35,7 +41,11 @@ async def schedule_interview(
     try:
 
         slot = data.get("slot")
-        candidate_name = data.get("candidate_name", "candidate")
+
+        # --------------------------------------------------
+        # Candidate identity from JWT
+        # --------------------------------------------------
+        candidate_name = user["email"]
 
         if not slot or not isinstance(slot, str) or not slot.strip():
             raise HTTPException(status_code=400, detail="Slot is required")
@@ -59,6 +69,13 @@ async def schedule_interview(
         # Run scheduler agent
         # ------------------------------------
         result = await scheduler_agent(state)
+
+        # ------------------------------------
+        # Save scheduled interview in DB
+        # ------------------------------------
+        candidates_collection.update_one(
+            {"email": candidate_name}, {"$set": {"scheduled_time": slot}}, upsert=True
+        )
 
         logger.info("Interview scheduling completed")
 

@@ -6,11 +6,17 @@ from fastapi import APIRouter, HTTPException, Depends, Body, Query
 from app.config.database import candidates_collection
 from app.utils.auth_dependency import get_current_hr_user
 
-router = APIRouter(tags=["Research"])
+# ---------------------------------------------------------
+# Router (HR namespace added to avoid route conflicts)
+# ---------------------------------------------------------
+router = APIRouter(prefix="/hr", tags=["Research"])
 
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------
+# Fetch Single Candidate (HR Dashboard)
+# ---------------------------------------------------------
 @router.get("/candidate/{name}")
 async def get_candidate(
     name: str, user: str = Depends(get_current_hr_user)
@@ -128,7 +134,7 @@ async def get_all_candidates(
 
 
 # ---------------------------------------------------------
-# Candidate filtering endpoint (NEW)
+# Candidate filtering endpoint
 # ---------------------------------------------------------
 @router.get("/candidates/filter")
 async def filter_candidates(
@@ -270,6 +276,9 @@ async def delete_candidate(
         )
 
 
+# ---------------------------------------------------------
+# Research service health check
+# ---------------------------------------------------------
 @router.get("/health")
 async def research_health():
     """

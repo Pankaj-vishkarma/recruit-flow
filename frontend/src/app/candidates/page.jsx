@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { isAuthenticated } from "@/lib/auth";
 import {
     getCandidates,
     updateCandidateStatus,
     deleteCandidate
-} from "../../lib/api";
+} from "@/lib/api";
 
 export default function CandidatesPage() {
+
+    const router = useRouter();
 
     const [candidates, setCandidates] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -17,7 +21,7 @@ export default function CandidatesPage() {
 
 
 
-    async function fetchCandidates() {
+    async function fetchCandidates(signal) {
 
         try {
 
@@ -34,8 +38,10 @@ export default function CandidatesPage() {
 
         } catch (err) {
 
-            console.error(err);
-            setError("Failed to load candidates.");
+            if (err.name !== "AbortError") {
+                console.error(err);
+                setError("Failed to load candidates.");
+            }
 
         } finally {
 
@@ -47,9 +53,18 @@ export default function CandidatesPage() {
 
     useEffect(() => {
 
-        fetchCandidates();
+        if (!isAuthenticated()) {
+            router.push("/login");
+            return;
+        }
 
-    }, [page]);
+        const controller = new AbortController();
+
+        fetchCandidates(controller.signal);
+
+        return () => controller.abort();
+
+    }, [page, router]);
 
 
 
@@ -129,6 +144,8 @@ export default function CandidatesPage() {
                 Candidates
             </h1>
 
+
+
             <div
                 style={{
                     background: "#fff",
@@ -193,7 +210,7 @@ export default function CandidatesPage() {
                                 </td>
 
                                 <td style={tdStyle}>
-                                    {candidate.status || "Pending"}
+                                    <StatusBadge status={candidate.status || "Pending"} />
                                 </td>
 
                                 <td style={tdStyle}>
@@ -268,6 +285,35 @@ export default function CandidatesPage() {
 
         </div>
 
+    );
+}
+
+
+
+/* ---------------------- */
+/* Status Badge */
+/* ---------------------- */
+
+function StatusBadge({ status }) {
+
+    const colors = {
+        shortlisted: "#16a34a",
+        rejected: "#ef4444",
+        pending: "#f59e0b"
+    };
+
+    return (
+        <span
+            style={{
+                padding: "4px 10px",
+                borderRadius: "20px",
+                background: colors[status?.toLowerCase()] || "#6b7280",
+                color: "#fff",
+                fontSize: "12px"
+            }}
+        >
+            {status}
+        </span>
     );
 }
 

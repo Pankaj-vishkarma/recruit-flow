@@ -1,38 +1,66 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { isAuthenticated } from "@/lib/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function DashboardPage() {
+
+    const router = useRouter();
 
     const [stats, setStats] = useState(null);
     const [pipeline, setPipeline] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-
     useEffect(() => {
+
+        if (!isAuthenticated()) {
+            router.push("/login");
+            return;
+        }
+
+        if (!API_URL) {
+            setError("API URL not configured.");
+            setLoading(false);
+            return;
+        }
+
+        const controller = new AbortController();
 
         async function fetchDashboard() {
 
             try {
 
-                const token =
-                    typeof window !== "undefined"
-                        ? localStorage.getItem("token")
-                        : null;
+                const token = localStorage.getItem("token");
+
+                if (!token) {
+                    router.push("/login");
+                    return;
+                }
 
                 /* ---------------------- */
                 /* Fetch dashboard stats */
                 /* ---------------------- */
 
                 const statsRes = await fetch(`${API_URL}/dashboard/stats`, {
+                    signal: controller.signal,
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`
                     }
                 });
+
+                if (statsRes.status === 401) {
+                    router.push("/login");
+                    return;
+                }
+
+                if (!statsRes.ok) {
+                    throw new Error("Failed to fetch stats");
+                }
 
                 const statsData = await statsRes.json();
 
@@ -40,7 +68,8 @@ export default function DashboardPage() {
                     throw new Error(statsData.message);
                 }
 
-                setStats(statsData?.data);
+                setStats(statsData?.data || {});
+
 
 
                 /* ---------------------- */
@@ -48,11 +77,21 @@ export default function DashboardPage() {
                 /* ---------------------- */
 
                 const pipeRes = await fetch(`${API_URL}/dashboard/pipeline`, {
+                    signal: controller.signal,
                     headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`
                     }
                 });
+
+                if (pipeRes.status === 401) {
+                    router.push("/login");
+                    return;
+                }
+
+                if (!pipeRes.ok) {
+                    throw new Error("Failed to fetch pipeline");
+                }
 
                 const pipeData = await pipeRes.json();
 
@@ -60,12 +99,14 @@ export default function DashboardPage() {
                     throw new Error(pipeData.message);
                 }
 
-                setPipeline(pipeData?.data);
+                setPipeline(pipeData?.data || {});
 
             } catch (err) {
 
-                console.error(err);
-                setError("Failed to load dashboard data.");
+                if (err.name !== "AbortError") {
+                    console.error(err);
+                    setError("Failed to load dashboard data.");
+                }
 
             } finally {
 
@@ -75,7 +116,9 @@ export default function DashboardPage() {
 
         fetchDashboard();
 
-    }, []);
+        return () => controller.abort();
+
+    }, [router]);
 
 
 
@@ -101,15 +144,11 @@ export default function DashboardPage() {
 
         <div style={{ padding: "30px" }}>
 
-            {/* Page Title */}
-
             <h1 style={{ marginBottom: "30px" }}>
                 HR Dashboard
             </h1>
 
 
-
-            {/* Analytics Cards */}
 
             <div
                 style={{
@@ -120,41 +159,14 @@ export default function DashboardPage() {
                 }}
             >
 
-                <DashboardCard
-                    title="Total Candidates"
-                    value={stats?.total_candidates || 0}
-                />
-
-                <DashboardCard
-                    title="Shortlisted"
-                    value={stats?.shortlisted || 0}
-                />
-
-                <DashboardCard
-                    title="Rejected"
-                    value={stats?.rejected || 0}
-                />
-
-                <DashboardCard
-                    title="Hired"
-                    value={stats?.hired || 0}
-                />
-
-                <DashboardCard
-                    title="Scheduled Interviews"
-                    value={stats?.scheduled_interviews || 0}
-                />
-
-                <DashboardCard
-                    title="Onboarding Completed"
-                    value={stats?.onboarding_complete || 0}
-                />
+                <DashboardCard title="Total Candidates" value={stats?.total_candidates || 0} />
+                <DashboardCard title="Shortlisted" value={stats?.shortlisted || 0} />
+                <DashboardCard title="Rejected" value={stats?.rejected || 0} />
+                <DashboardCard title="Hired" value={stats?.hired || 0} />
+                <DashboardCard title="Scheduled Interviews" value={stats?.scheduled_interviews || 0} />
+                <DashboardCard title="Onboarding Completed" value={stats?.onboarding_complete || 0} />
 
             </div>
-
-
-
-            {/* Interview Pipeline */}
 
             <PipelineView data={pipeline} />
 
@@ -169,14 +181,7 @@ export default function DashboardPage() {
 /* Dashboard Card */
 /* ---------------------- */
 
-function DashboardCard({ title, value, status }) {
-
-    const statusColor =
-        value === "Completed"
-            ? "#16a34a"
-            : value === "Pending"
-                ? "#f59e0b"
-                : "#111";
+function DashboardCard({ title, value }) {
 
     return (
 
@@ -202,7 +207,7 @@ function DashboardCard({ title, value, status }) {
             <h3
                 style={{
                     margin: 0,
-                    color: status ? statusColor : "#111"
+                    color: "#111"
                 }}
             >
                 {value}
@@ -224,10 +229,10 @@ function PipelineView({ data }) {
     if (!data) return null;
 
     const stages = [
-        { name: "Pending", value: data.pending },
-        { name: "Shortlisted", value: data.shortlisted },
-        { name: "Rejected", value: data.rejected },
-        { name: "Hired", value: data.hired }
+        { name: "Pending", value: data?.pending || 0 },
+        { name: "Shortlisted", value: data?.shortlisted || 0 },
+        { name: "Rejected", value: data?.rejected || 0 },
+        { name: "Hired", value: data?.hired || 0 }
     ];
 
     return (

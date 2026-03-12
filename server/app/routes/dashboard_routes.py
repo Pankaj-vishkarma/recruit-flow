@@ -1,7 +1,8 @@
 import logging
 from typing import Dict, Any
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Path
+from bson import ObjectId
 
 from app.config.database import candidates_collection
 from app.utils.auth_dependency import get_current_hr_user
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------
 @router.get("/stats")
 async def get_dashboard_stats(
-    user: str = Depends(get_current_hr_user),
+    user: dict = Depends(get_current_hr_user),
 ) -> Dict[str, Any]:
     """
     Fetch HR dashboard statistics.
@@ -73,7 +74,7 @@ async def get_dashboard_stats(
                 "onboarding_complete": 0,
             }
 
-        logger.info("Dashboard statistics fetched")
+        logger.info(f"Dashboard statistics fetched by {user['email']}")
 
         return {
             "status": "success",
@@ -95,7 +96,7 @@ async def get_dashboard_stats(
 # ---------------------------------------------------------
 @router.get("/pipeline")
 async def get_candidate_pipeline(
-    user: str = Depends(get_current_hr_user),
+    user: dict = Depends(get_current_hr_user),
 ) -> Dict[str, Any]:
     """
     Fetch candidate pipeline breakdown.
@@ -112,7 +113,7 @@ async def get_candidate_pipeline(
             "hired": candidates_collection.count_documents({"status": "hired"}),
         }
 
-        logger.info("Candidate pipeline fetched")
+        logger.info(f"Candidate pipeline fetched by {user['email']}")
 
         return {
             "status": "success",
@@ -126,4 +127,93 @@ async def get_candidate_pipeline(
         raise HTTPException(
             status_code=500,
             detail="Failed to retrieve pipeline data",
+        )
+
+
+# ---------------------------------------------------------
+# Get All Candidates (HR Management)
+# ---------------------------------------------------------
+@router.get("/candidates")
+async def get_all_candidates(
+    user: dict = Depends(get_current_hr_user),
+) -> Dict[str, Any]:
+
+    try:
+
+        candidates = list(candidates_collection.find({}))
+
+        for c in candidates:
+            c["_id"] = str(c["_id"])
+
+        logger.info(f"Candidate list fetched by {user['email']}")
+
+        return {
+            "status": "success",
+            "data": candidates,
+        }
+
+    except Exception as e:
+
+        logger.exception(f"Failed fetching candidates: {e}")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to fetch candidates",
+        )
+
+
+# ---------------------------------------------------------
+# Update Candidate Status or Score
+# ---------------------------------------------------------
+@router.put("/candidate/{candidate_id}")
+async def update_candidate_status(
+    candidate_id: str = Path(...),
+    payload: Dict[str, Any] = {},
+    user: dict = Depends(get_current_hr_user),
+) -> Dict[str, Any]:
+
+    try:
+
+        update_fields = {}
+
+        if "status" in payload:
+            update_fields["status"] = payload["status"]
+
+        if "interview_score" in payload:
+            update_fields["interview_score"] = payload["interview_score"]
+
+        if not update_fields:
+            raise HTTPException(
+                status_code=400,
+                detail="No fields provided for update",
+            )
+
+        result = candidates_collection.update_one(
+            {"_id": ObjectId(candidate_id)},
+            {"$set": update_fields},
+        )
+
+        if result.matched_count == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="Candidate not found",
+            )
+
+        logger.info(f"Candidate updated by {user['email']}")
+
+        return {
+            "status": "success",
+            "message": "Candidate updated successfully",
+        }
+
+    except HTTPException as http_error:
+        raise http_error
+
+    except Exception as e:
+
+        logger.exception(f"Candidate update failed: {e}")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update candidate",
         )

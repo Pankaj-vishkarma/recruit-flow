@@ -4,6 +4,7 @@ from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 from dotenv import load_dotenv
 
+
 # --------------------------------------------------
 # Load environment variables
 # --------------------------------------------------
@@ -24,7 +25,7 @@ if not MONGO_URI:
 def create_mongo_client(retries: int = 3) -> MongoClient:
     """
     Create MongoDB connection with retry logic.
-    Production safe configuration.
+    Production-safe configuration.
     """
 
     for attempt in range(retries):
@@ -33,19 +34,16 @@ def create_mongo_client(retries: int = 3) -> MongoClient:
 
             client = MongoClient(
                 MONGO_URI,
-                # Connection tuning
                 serverSelectionTimeoutMS=5000,
                 connectTimeoutMS=5000,
                 socketTimeoutMS=5000,
-                # Pool tuning
                 maxPoolSize=50,
                 minPoolSize=5,
-                # Prevent idle disconnections
                 retryWrites=True,
                 retryReads=True,
             )
 
-            # Force connection test
+            # test connection
             client.admin.command("ping")
 
             logger.info("✅ MongoDB connection established")
@@ -68,14 +66,25 @@ def create_mongo_client(retries: int = 3) -> MongoClient:
 # --------------------------------------------------
 client = create_mongo_client()
 
+
 # --------------------------------------------------
 # Database
 # --------------------------------------------------
 db = client[DB_NAME]
 
+
+# --------------------------------------------------
+# Database Getter
+# --------------------------------------------------
+def get_database():
+    return db
+
+
 # --------------------------------------------------
 # Collections
 # --------------------------------------------------
+users_collection = db["users"]
+
 candidates_collection = db["candidates"]
 
 
@@ -83,14 +92,28 @@ candidates_collection = db["candidates"]
 # Create indexes for performance
 # --------------------------------------------------
 def initialize_indexes():
-    """
-    Create required database indexes.
-    Improves dashboard queries and search performance.
-    """
 
     try:
 
-        candidates_collection.create_index("name", unique=True)
+        # -------------------------
+        # USERS COLLECTION INDEXES
+        # -------------------------
+
+        users_collection.create_index("email", unique=True)
+
+        users_collection.create_index("role")
+
+        users_collection.create_index("status")
+
+        users_collection.create_index("created_at")
+
+        users_collection.create_index([("role", 1), ("status", 1)])
+
+        # -------------------------
+        # CANDIDATES COLLECTION
+        # -------------------------
+
+        candidates_collection.create_index("name")
 
         candidates_collection.create_index("skills")
 
@@ -98,14 +121,8 @@ def initialize_indexes():
 
         candidates_collection.create_index("status")
 
-        # --------------------------------------------------
-        # STEP 9 PERFORMANCE INDEXES
-        # --------------------------------------------------
-
-        # Faster onboarding status queries
         candidates_collection.create_index("onboarding_complete")
 
-        # Compound index for HR dashboard filtering
         candidates_collection.create_index([("status", 1), ("scheduled_time", 1)])
 
         logger.info("✅ MongoDB indexes initialized")
@@ -115,7 +132,6 @@ def initialize_indexes():
         logger.warning(f"Index initialization failed: {e}")
 
 
-# Initialize indexes on startup
 initialize_indexes()
 
 
@@ -123,9 +139,6 @@ initialize_indexes()
 # Health Check Utility
 # --------------------------------------------------
 def check_database_health() -> bool:
-    """
-    Used by health endpoint to verify DB connectivity.
-    """
 
     try:
 

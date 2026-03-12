@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.utils.jwt_handler import verify_token
@@ -6,28 +6,47 @@ from app.utils.jwt_handler import verify_token
 security = HTTPBearer()
 
 
-def get_current_hr_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
     token = credentials.credentials
 
-    try:
+    payload = verify_token(token)
 
-        payload = verify_token(token)
-
-        email = payload.get("sub")
-
-        if not email:
-
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid authentication token",
-            )
-
-        return email
-
-    except Exception:
-
+    if payload is None:
         raise HTTPException(
-            status_code=401,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
         )
+
+    email = payload.get("sub")  # IMPORTANT
+    role = payload.get("role")
+
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+        )
+
+    return {"email": email, "role": role}
+
+
+def get_current_hr_user(user=Depends(get_current_user)):
+
+    if user["role"] != "hr":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="HR access required",
+        )
+
+    return user
+
+
+def get_current_candidate_user(user=Depends(get_current_user)):
+
+    if user["role"] != "candidate":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Candidate access required",
+        )
+
+    return user

@@ -1,11 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { logout, isAuthenticated } from "@/lib/auth";
 
 export default function Navbar() {
 
-    const auth = typeof window !== "undefined" && isAuthenticated();
+    const router = useRouter();
+
+    const auth = isAuthenticated();
+
+    const handleLogout = () => {
+        logout();
+        router.push("/login");
+    };
 
     return (
         <nav
@@ -70,7 +78,7 @@ export default function Navbar() {
                 {auth ? (
 
                     <button
-                        onClick={logout}
+                        onClick={handleLogout}
                         style={logoutBtn}
                     >
                         Logout

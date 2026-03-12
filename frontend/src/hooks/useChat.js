@@ -1,11 +1,49 @@
-import { useState } from "react";
-import { sendMessage } from "../lib/api";
+import { useState, useEffect } from "react";
+import { sendMessage } from "@/lib/api";
 
 export default function useChat() {
 
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+
+
+    /* -------------------------------- */
+    /* Load chat history */
+    /* -------------------------------- */
+
+    useEffect(() => {
+
+        if (typeof window === "undefined") return;
+
+        const saved = localStorage.getItem("chat_history");
+
+        if (saved) {
+            setMessages(JSON.parse(saved));
+        }
+
+    }, []);
+
+
+
+    /* -------------------------------- */
+    /* Save chat history */
+    /* -------------------------------- */
+
+    useEffect(() => {
+
+        if (typeof window === "undefined") return;
+
+        localStorage.setItem("chat_history", JSON.stringify(messages));
+
+    }, [messages]);
+
+
+
+    /* -------------------------------- */
+    /* Send message */
+    /* -------------------------------- */
 
     const send = async (text) => {
 
@@ -15,7 +53,8 @@ export default function useChat() {
 
         const userMsg = {
             role: "user",
-            text
+            text,
+            time: new Date().toLocaleTimeString()
         };
 
         setMessages(prev => [...prev, userMsg]);
@@ -33,7 +72,8 @@ export default function useChat() {
 
             const botMsg = {
                 role: "assistant",
-                text: reply
+                text: reply,
+                time: new Date().toLocaleTimeString()
             };
 
             setMessages(prev => [...prev, botMsg]);
@@ -48,7 +88,8 @@ export default function useChat() {
                 ...prev,
                 {
                     role: "assistant",
-                    text: "⚠️ Error communicating with server."
+                    text: "⚠️ Error communicating with server.",
+                    time: new Date().toLocaleTimeString()
                 }
             ]);
 
@@ -58,10 +99,23 @@ export default function useChat() {
         }
     };
 
+
+
+    /* -------------------------------- */
+    /* Reset chat */
+    /* -------------------------------- */
+
     const resetChat = () => {
+
         setMessages([]);
         setError(null);
+
+        if (typeof window !== "undefined") {
+            localStorage.removeItem("chat_history");
+        }
     };
+
+
 
     return {
         messages,

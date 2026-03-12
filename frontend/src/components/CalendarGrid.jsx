@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { scheduleInterview } from "../lib/api";
+import { scheduleInterview } from "@/lib/api";
 
 const slots = [
-    "Monday 10:00 AM",
-    "Monday 2:00 PM",
-    "Tuesday 11:00 AM",
-    "Wednesday 3:00 PM",
-    "Thursday 1:00 PM",
-    "Friday 4:00 PM"
+    { day: "Monday", time: "10:00 AM" },
+    { day: "Monday", time: "2:00 PM" },
+    { day: "Tuesday", time: "11:00 AM" },
+    { day: "Wednesday", time: "3:00 PM" },
+    { day: "Thursday", time: "1:00 PM" },
+    { day: "Friday", time: "4:00 PM" }
 ];
 
 export default function CalendarGrid() {
@@ -18,6 +18,8 @@ export default function CalendarGrid() {
     const [confirmed, setConfirmed] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+
 
     const handleSelect = (slot) => {
 
@@ -28,6 +30,8 @@ export default function CalendarGrid() {
         setError(null);
     };
 
+
+
     const handleConfirm = async () => {
 
         if (!selectedSlot) return;
@@ -37,12 +41,10 @@ export default function CalendarGrid() {
 
         try {
 
-            /* ----------------------------- */
-            /* Send scheduling request */
-            /* ----------------------------- */
+            const slotText = `${selectedSlot.day} ${selectedSlot.time}`;
 
             const res = await scheduleInterview(
-                selectedSlot,
+                slotText,
                 "candidate"
             );
 
@@ -67,11 +69,13 @@ export default function CalendarGrid() {
         }
     };
 
+
+
     return (
 
         <div
             style={{
-                maxWidth: "800px",
+                maxWidth: "820px",
                 margin: "auto",
                 padding: "30px",
                 background: "#fff",
@@ -91,6 +95,8 @@ export default function CalendarGrid() {
                 Schedule Your Interview
             </h2>
 
+
+
             {/* Calendar Grid */}
 
             <div
@@ -103,15 +109,18 @@ export default function CalendarGrid() {
 
                 {slots.map((slot) => {
 
-                    const isSelected = selectedSlot === slot;
+                    const slotText = `${slot.day} ${slot.time}`;
+                    const isSelected =
+                        selectedSlot?.day === slot.day &&
+                        selectedSlot?.time === slot.time;
 
                     return (
 
                         <button
-                            key={slot}
+                            key={slotText}
 
                             /* IMPORTANT FOR PLAYWRIGHT */
-                            data-slot={slot}
+                            data-slot={slotText}
 
                             onClick={() => handleSelect(slot)}
 
@@ -137,7 +146,10 @@ export default function CalendarGrid() {
                                     : "none"
                             }}
                         >
-                            {slot}
+                            <div>{slot.day}</div>
+                            <div style={{ fontSize: "13px" }}>
+                                {slot.time}
+                            </div>
                         </button>
 
                     );
@@ -159,7 +171,10 @@ export default function CalendarGrid() {
                 >
 
                     <p style={{ marginBottom: "10px" }}>
-                        Selected Slot: <b>{selectedSlot}</b>
+                        Selected Slot:{" "}
+                        <b>
+                            {selectedSlot.day} {selectedSlot.time}
+                        </b>
                     </p>
 
                     <button
@@ -197,7 +212,10 @@ export default function CalendarGrid() {
                         fontSize: "16px"
                     }}
                 >
-                    ✅ Interview successfully scheduled for <b>{selectedSlot}</b>
+                    ✅ Interview successfully scheduled for{" "}
+                    <b>
+                        {selectedSlot.day} {selectedSlot.time}
+                    </b>
                 </div>
 
             )}

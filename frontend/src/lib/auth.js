@@ -1,4 +1,17 @@
 /* -------------------------------- */
+/* Get Token */
+/* -------------------------------- */
+
+export function getToken() {
+
+    if (typeof window === "undefined") return null;
+
+    return localStorage.getItem("token");
+}
+
+
+
+/* -------------------------------- */
 /* Save JWT Token */
 /* -------------------------------- */
 
@@ -12,29 +25,51 @@ export function saveToken(token) {
 
 
 /* -------------------------------- */
-/* Get JWT Token */
+/* Remove Token */
 /* -------------------------------- */
 
-export function getToken() {
+export function removeToken() {
 
-    if (typeof window === "undefined") return null;
+    if (typeof window === "undefined") return;
 
-    return localStorage.getItem("token");
+    localStorage.removeItem("token");
 }
 
 
 
 /* -------------------------------- */
-/* Remove Token (Logout) */
+/* Logout */
 /* -------------------------------- */
 
 export function logout() {
 
     if (typeof window === "undefined") return;
 
-    localStorage.removeItem("token");
+    removeToken();
 
     window.location.href = "/login";
+}
+
+
+
+/* -------------------------------- */
+/* Check Token Expiry */
+/* -------------------------------- */
+
+function isTokenExpired(token) {
+
+    try {
+
+        const payload = JSON.parse(atob(token.split(".")[1]));
+
+        const exp = payload.exp * 1000;
+
+        return Date.now() > exp;
+
+    } catch (error) {
+
+        return true;
+    }
 }
 
 
@@ -45,9 +80,16 @@ export function logout() {
 
 export function isAuthenticated() {
 
-    if (typeof window === "undefined") return false;
+    const token = getToken();
 
-    const token = localStorage.getItem("token");
+    if (!token) return false;
 
-    return !!token;
+    if (isTokenExpired(token)) {
+
+        removeToken();
+
+        return false;
+    }
+
+    return true;
 }
