@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { registerUser } from "@/lib/api";
+import { motion } from "framer-motion";
 
 export default function RegisterPage() {
 
@@ -58,66 +59,39 @@ export default function RegisterPage() {
     }
 
     return (
-        <div
-            style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                height: "100vh",
-                background: "#f5f7fb"
-            }}
-        >
 
-            <div
-                style={{
-                    width: "360px",
-                    background: "#fff",
-                    padding: "30px",
-                    borderRadius: "10px",
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)"
-                }}
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-indigo-50 px-4">
+
+            <motion.div
+                initial={{ opacity: 0, y: 25 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg"
             >
 
-                <h2
-                    style={{
-                        marginBottom: "20px",
-                        textAlign: "center"
-                    }}
-                >
+                <h2 className="text-2xl font-semibold text-center mb-6 text-gray-800">
                     HR Register
                 </h2>
 
                 {error && (
-                    <div
-                        style={{
-                            marginBottom: "15px",
-                            color: "#ef4444",
-                            fontSize: "14px"
-                        }}
-                    >
+                    <div className="mb-4 text-red-500 text-sm text-center">
                         {error}
                     </div>
                 )}
 
                 {success && (
-                    <div
-                        style={{
-                            marginBottom: "15px",
-                            color: "#16a34a",
-                            fontSize: "14px"
-                        }}
-                    >
+                    <div className="mb-4 text-green-600 text-sm text-center">
                         {success}
                     </div>
                 )}
 
-                <form onSubmit={handleRegister}>
+                <form onSubmit={handleRegister} className="space-y-4">
 
                     <input
                         placeholder="Name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        style={inputStyle}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
 
                     <input
@@ -125,7 +99,7 @@ export default function RegisterPage() {
                         placeholder="Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        style={inputStyle}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
 
                     <input
@@ -133,54 +107,32 @@ export default function RegisterPage() {
                         placeholder="Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        style={inputStyle}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
 
                     <button
                         type="submit"
                         disabled={loading}
-                        style={buttonStyle}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-lg transition disabled:opacity-60"
                     >
                         {loading ? "Registering..." : "Register"}
                     </button>
 
                 </form>
 
-                <p
-                    style={{
-                        marginTop: "15px",
-                        fontSize: "14px",
-                        textAlign: "center"
-                    }}
-                >
+                <p className="mt-5 text-sm text-center text-gray-600">
                     Already have an account?{" "}
-                    <Link href="/login">
+                    <Link
+                        href="/login"
+                        className="text-blue-600 hover:underline"
+                    >
                         Login
                     </Link>
                 </p>
 
-            </div>
+            </motion.div>
 
         </div>
+
     );
 }
-
-const inputStyle = {
-    width: "100%",
-    padding: "10px",
-    marginBottom: "12px",
-    borderRadius: "6px",
-    border: "1px solid #d1d5db",
-    fontSize: "14px"
-};
-
-const buttonStyle = {
-    width: "100%",
-    padding: "10px",
-    borderRadius: "6px",
-    border: "none",
-    background: "#2563eb",
-    color: "#fff",
-    fontSize: "14px",
-    cursor: "pointer"
-};

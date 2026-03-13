@@ -217,3 +217,42 @@ async def update_candidate_status(
             status_code=500,
             detail="Failed to update candidate",
         )
+
+
+# ---------------------------------------------------------
+# Delete Candidate
+# ---------------------------------------------------------
+@router.delete("/candidate/{candidate_id}")
+async def delete_candidate(
+    candidate_id: str,
+    user: dict = Depends(get_current_hr_user),
+):
+
+    try:
+
+        result = candidates_collection.delete_one({"_id": ObjectId(candidate_id)})
+
+        if result.deleted_count == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="Candidate not found",
+            )
+
+        logger.info(f"Candidate deleted by {user['email']}")
+
+        return {
+            "status": "success",
+            "message": "Candidate deleted",
+        }
+
+    except HTTPException as http_error:
+        raise http_error
+
+    except Exception as e:
+
+        logger.exception(f"Candidate deletion failed: {e}")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete candidate",
+        )

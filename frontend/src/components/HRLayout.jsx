@@ -3,20 +3,27 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, LogOut } from "lucide-react";
+import {
+    Menu,
+    X,
+    LayoutDashboard,
+    Users,
+    CalendarDays,
+    MessageSquare,
+    LogOut,
+} from "lucide-react";
 
-export default function CandidateLayout({ children }) {
+export default function HRLayout({ children }) {
 
     const pathname = usePathname();
     const router = useRouter();
     const [open, setOpen] = useState(false);
 
     const navItems = [
-        { name: "Dashboard", href: "/candidate/dashboard" },
-        { name: "AI Interview Chat", href: "/candidate/chat" },
-        { name: "Interview", href: "/candidate/interview" },
-        { name: "Application Status", href: "/candidate/status" },
-        { name: "Profile", href: "/candidate/profile" },
+        { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+        { name: "Candidates", href: "/candidates", icon: Users },
+        { name: "Calendar", href: "/calendar", icon: CalendarDays },
+        { name: "Chat", href: "/chat", icon: MessageSquare },
     ];
 
     const handleLogout = () => {
@@ -30,26 +37,26 @@ export default function CandidateLayout({ children }) {
 
             {/* Mobile Header */}
 
-            <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b z-50 flex items-center justify-between px-4">
+            <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b z-50 flex items-center justify-between px-4">
 
                 <span className="font-semibold text-gray-800">
-                    Candidate Panel
+                    RecruitFlow HR
                 </span>
 
                 <button
                     onClick={() => setOpen(!open)}
-                    className="p-1 rounded hover:bg-gray-100"
+                    className="p-1"
                 >
-                    {open ? <X size={20} /> : <Menu size={20} />}
+                    {open ? <X size={22} /> : <Menu size={22} />}
                 </button>
 
-            </div>
+            </header>
 
 
             {/* Sidebar */}
 
             <aside
-                className={`fixed top-0 left-0 h-full w-64 bg-gray-900 text-gray-200 transform transition-transform duration-200 z-50 flex flex-col
+                className={`fixed top-0 left-0 h-full w-64 bg-gray-900 text-gray-200 transform transition-transform duration-300 z-50 flex flex-col
                 ${open ? "translate-x-0" : "-translate-x-full"}
                 lg:translate-x-0`}
             >
@@ -58,8 +65,8 @@ export default function CandidateLayout({ children }) {
 
                 <div className="px-6 py-6 border-b border-gray-800">
 
-                    <h2 className="text-lg font-semibold">
-                        Candidate Panel
+                    <h2 className="text-lg font-semibold tracking-wide">
+                        RecruitFlow HR
                     </h2>
 
                 </div>
@@ -72,20 +79,27 @@ export default function CandidateLayout({ children }) {
                     {navItems.map((item) => {
 
                         const active = pathname === item.href;
+                        const Icon = item.icon;
 
                         return (
+
                             <Link
                                 key={item.href}
                                 href={item.href}
                                 onClick={() => setOpen(false)}
-                                className={`block px-3 py-2 rounded-lg text-sm transition
+                                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150
                                 ${active
                                         ? "bg-gray-800 text-white"
-                                        : "hover:bg-gray-800 hover:text-white"
+                                        : "text-gray-300 hover:bg-gray-800 hover:text-white"
                                     }`}
                             >
+
+                                <Icon size={18} />
+
                                 {item.name}
+
                             </Link>
+
                         );
 
                     })}
@@ -101,8 +115,11 @@ export default function CandidateLayout({ children }) {
                         onClick={handleLogout}
                         className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg text-sm bg-red-500 hover:bg-red-600 transition text-white"
                     >
-                        <LogOut size={16} />
+
+                        <LogOut size={18} />
+
                         Logout
+
                     </button>
 
                 </div>
@@ -124,7 +141,7 @@ export default function CandidateLayout({ children }) {
 
             <main className="flex-1 lg:ml-64 pt-16 lg:pt-8">
 
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
 
                     {children}
 

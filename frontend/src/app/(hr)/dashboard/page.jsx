@@ -71,7 +71,6 @@ export default function DashboardPage() {
                 setStats(statsData?.data || {});
 
 
-
                 /* ---------------------- */
                 /* Fetch pipeline data */
                 /* ---------------------- */
@@ -121,10 +120,9 @@ export default function DashboardPage() {
     }, [router]);
 
 
-
     if (loading) {
         return (
-            <div style={{ padding: "40px", textAlign: "center" }}>
+            <div className="flex justify-center items-center h-[60vh] text-gray-500">
                 Loading dashboard...
             </div>
         );
@@ -132,32 +130,25 @@ export default function DashboardPage() {
 
     if (error) {
         return (
-            <div style={{ padding: "40px", textAlign: "center", color: "red" }}>
+            <div className="text-center text-red-500 py-20">
                 {error}
             </div>
         );
     }
 
 
-
     return (
 
-        <div style={{ padding: "30px" }}>
+        <div className="space-y-10">
 
-            <h1 style={{ marginBottom: "30px" }}>
+            <h1 className="text-2xl font-semibold text-gray-800">
                 HR Dashboard
             </h1>
 
 
+            {/* Stats Grid */}
 
-            <div
-                style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                    gap: "20px",
-                    marginBottom: "40px"
-                }}
-            >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
 
                 <DashboardCard title="Total Candidates" value={stats?.total_candidates || 0} />
                 <DashboardCard title="Shortlisted" value={stats?.shortlisted || 0} />
@@ -167,6 +158,9 @@ export default function DashboardPage() {
                 <DashboardCard title="Onboarding Completed" value={stats?.onboarding_complete || 0} />
 
             </div>
+
+
+            {/* Pipeline */}
 
             <PipelineView data={pipeline} />
 
@@ -185,37 +179,20 @@ function DashboardCard({ title, value }) {
 
     return (
 
-        <div
-            style={{
-                padding: "22px",
-                borderRadius: "14px",
-                background: "#ffffff",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
-            }}
-        >
+        <div className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition">
 
-            <p
-                style={{
-                    fontSize: "13px",
-                    color: "#777",
-                    marginBottom: "8px"
-                }}
-            >
+            <p className="text-sm text-gray-500 mb-2">
                 {title}
             </p>
 
-            <h3
-                style={{
-                    margin: 0,
-                    color: "#111"
-                }}
-            >
+            <h3 className="text-xl font-semibold text-gray-900">
                 {value}
             </h3>
 
         </div>
 
     );
+
 }
 
 
@@ -237,43 +214,29 @@ function PipelineView({ data }) {
 
     return (
 
-        <div
-            style={{
-                background: "#fff",
-                padding: "25px",
-                borderRadius: "14px",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.06)"
-            }}
-        >
+        <div className="bg-white border rounded-xl p-6 shadow-sm">
 
-            <h3 style={{ marginBottom: "20px" }}>
+            <h3 className="text-lg font-semibold mb-6 text-gray-800">
                 Candidate Pipeline
             </h3>
 
-            <div
-                style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: "10px"
-                }}
-            >
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 
                 {stages.map((stage) => (
 
                     <div
                         key={stage.name}
-                        style={{
-                            flex: 1,
-                            textAlign: "center",
-                            padding: "12px",
-                            borderRadius: "8px",
-                            background: "#2563eb",
-                            color: "#fff",
-                            fontSize: "14px"
-                        }}
+                        className="bg-blue-600 text-white rounded-lg p-4 text-center"
                     >
-                        <div>{stage.name}</div>
-                        <strong>{stage.value}</strong>
+
+                        <div className="text-sm">
+                            {stage.name}
+                        </div>
+
+                        <strong className="text-lg">
+                            {stage.value}
+                        </strong>
+
                     </div>
 
                 ))}
@@ -283,4 +246,5 @@ function PipelineView({ data }) {
         </div>
 
     );
+
 }

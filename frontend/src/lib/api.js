@@ -163,8 +163,7 @@ export async function getCandidateData(candidateName = "candidate") {
 /* -------------------------------- */
 
 export async function getCandidates(page = 1, limit = 10) {
-
-    return apiRequest(`/candidates?page=${page}&limit=${limit}`);
+    return apiRequest(`/dashboard/candidates?page=${page}&limit=${limit}`);
 }
 
 
@@ -173,14 +172,14 @@ export async function getCandidates(page = 1, limit = 10) {
 /* UPDATE CANDIDATE STATUS */
 /* -------------------------------- */
 
-export async function updateCandidateStatus(name, status) {
+export async function updateCandidateStatus(id, status) {
 
-    if (!name || !status) {
-        return { status: "error", message: "Name and status required" };
+    if (!id || !status) {
+        return { status: "error", message: "ID and status required" };
     }
 
-    return apiRequest(`/candidate/${name}/status`, {
-        method: "PATCH",
+    return apiRequest(`/dashboard/candidate/${id}`, {
+        method: "PUT",
         body: JSON.stringify({
             status
         })
@@ -194,13 +193,13 @@ export async function updateCandidateStatus(name, status) {
 /* DELETE CANDIDATE */
 /* -------------------------------- */
 
-export async function deleteCandidate(name) {
+export async function deleteCandidate(id) {
 
-    if (!name) {
-        return { status: "error", message: "Candidate name required" };
+    if (!id) {
+        return { status: "error", message: "Candidate id required" };
     }
 
-    return apiRequest(`/candidate/${name}`, {
+    return apiRequest(`/dashboard/candidate/${id}`, {
         method: "DELETE"
     });
 

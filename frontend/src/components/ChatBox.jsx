@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { sendMessage } from "@/lib/api";
 import MessageBubble from "./MessageBubble";
+import { Bot, SendHorizonal } from "lucide-react";
 
 export default function ChatBox() {
 
@@ -14,51 +15,28 @@ export default function ChatBox() {
     const bottomRef = useRef(null);
     const textareaRef = useRef(null);
 
-
-
-    /* --------------------------- */
     /* Load chat history */
-    /* --------------------------- */
 
     useEffect(() => {
-
         const saved = localStorage.getItem("chat_history");
-
         if (saved) {
             setMessages(JSON.parse(saved));
         }
-
     }, []);
 
-
-
-    /* --------------------------- */
     /* Save chat history */
-    /* --------------------------- */
 
     useEffect(() => {
-
         localStorage.setItem("chat_history", JSON.stringify(messages));
-
     }, [messages]);
 
-
-
-    /* --------------------------- */
     /* Auto Scroll */
-    /* --------------------------- */
 
     useEffect(() => {
-
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-
     }, [messages, loading]);
 
-
-
-    /* --------------------------- */
     /* Auto Resize Textarea */
-    /* --------------------------- */
 
     useEffect(() => {
 
@@ -70,11 +48,7 @@ export default function ChatBox() {
 
     }, [input]);
 
-
-
-    /* --------------------------- */
     /* Send Message */
-    /* --------------------------- */
 
     const handleSend = async () => {
 
@@ -99,12 +73,23 @@ export default function ChatBox() {
 
             const res = await sendMessage(messageToSend);
 
+            let responseText = "";
+
+            if (typeof res?.data === "object") {
+
+                responseText = Object.entries(res.data)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join("\n");
+
+            } else {
+
+                responseText = res?.data || res?.message || "No response from system";
+
+            }
+
             const botMessage = {
                 role: "assistant",
-                text:
-                    res?.data
-                        ? JSON.stringify(res.data, null, 2)
-                        : res?.message || "No response from system",
+                text: responseText,
                 time: new Date().toLocaleTimeString()
             };
 
@@ -113,20 +98,16 @@ export default function ChatBox() {
         } catch (err) {
 
             console.error(err);
-
             setError("Failed to communicate with server.");
 
         } finally {
 
             setLoading(false);
+
         }
     };
 
-
-
-    /* --------------------------- */
-    /* Enter key support */
-    /* --------------------------- */
+    /* Enter key */
 
     const handleKeyPress = (e) => {
 
@@ -134,62 +115,40 @@ export default function ChatBox() {
             e.preventDefault();
             handleSend();
         }
+
     };
-
-
 
     return (
 
-        <div
-            style={{
-                maxWidth: "900px",
-                margin: "auto",
-                display: "flex",
-                flexDirection: "column",
-                height: "90vh",
-                borderRadius: "12px",
-                background: "#ffffff",
-                boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-                overflow: "hidden"
-            }}
-        >
+        <div className="flex flex-col h-[80vh] bg-white rounded-xl shadow-sm border overflow-hidden">
 
-            {/* Chat Header */}
+            {/* Header */}
 
-            <div
-                style={{
-                    padding: "16px 20px",
-                    borderBottom: "1px solid #eee",
-                    fontWeight: "600",
-                    background: "#f9fafb"
-                }}
-            >
+            <div className="px-6 py-4 border-b bg-gray-50 flex items-center gap-2 font-semibold text-gray-800">
+
+                <Bot size={18} className="text-blue-600" />
+
                 RecruitFlow AI Assistant
+
             </div>
 
 
+            {/* Messages */}
 
-            {/* Chat Messages */}
-
-            <div
-                style={{
-                    flex: 1,
-                    overflowY: "auto",
-                    padding: "20px",
-                    background: "#f8fafc"
-                }}
-            >
+            <div className="flex-1 overflow-y-auto p-6 bg-gray-50 space-y-4">
 
                 {messages.length === 0 && (
-                    <div
-                        style={{
-                            textAlign: "center",
-                            color: "#888",
-                            marginTop: "40px"
-                        }}
-                    >
+
+                    <div className="text-center text-gray-500 mt-10">
+
+                        <div className="flex justify-center mb-3">
+                            <Bot size={28} className="text-gray-400" />
+                        </div>
+
                         Start a conversation with the HR assistant
+
                     </div>
+
                 )}
 
                 {messages.map((msg, i) => (
@@ -197,15 +156,15 @@ export default function ChatBox() {
                 ))}
 
                 {loading && (
-                    <div
-                        style={{
-                            color: "#666",
-                            padding: "10px",
-                            fontStyle: "italic"
-                        }}
-                    >
+
+                    <div className="flex items-center gap-2 text-gray-500 italic">
+
+                        <Bot size={16} />
+
                         AI is thinking...
+
                     </div>
+
                 )}
 
                 <div ref={bottomRef} />
@@ -213,34 +172,18 @@ export default function ChatBox() {
             </div>
 
 
-
-            {/* Error Message */}
+            {/* Error */}
 
             {error && (
-                <div
-                    style={{
-                        color: "red",
-                        padding: "10px 20px",
-                        fontSize: "14px"
-                    }}
-                >
+                <div className="text-red-500 text-sm px-6 py-2">
                     {error}
                 </div>
             )}
 
 
+            {/* Input */}
 
-            {/* Input Area */}
-
-            <div
-                style={{
-                    display: "flex",
-                    gap: "10px",
-                    padding: "15px",
-                    borderTop: "1px solid #eee",
-                    background: "#fff"
-                }}
-            >
+            <div className="flex gap-3 p-4 border-t bg-white">
 
                 <textarea
                     ref={textareaRef}
@@ -249,35 +192,46 @@ export default function ChatBox() {
                     onKeyDown={handleKeyPress}
                     placeholder="Ask something about the candidate..."
                     rows={1}
-                    style={{
-                        flex: 1,
-                        padding: "12px",
-                        borderRadius: "8px",
-                        border: "1px solid #ddd",
-                        outline: "none",
-                        resize: "none",
-                        fontSize: "14px"
-                    }}
+                    className="
+                    flex-1
+                    resize-none
+                    border
+                    rounded-lg
+                    px-4 py-2
+                    text-sm
+                    focus:outline-none
+                    focus:ring-2
+                    focus:ring-blue-500
+                    transition
+                    "
                 />
 
                 <button
                     onClick={handleSend}
                     disabled={loading}
-                    style={{
-                        padding: "12px 20px",
-                        borderRadius: "8px",
-                        border: "none",
-                        background: loading ? "#aaa" : "#2563eb",
-                        color: "#fff",
-                        cursor: loading ? "not-allowed" : "pointer",
-                        fontWeight: "500"
-                    }}
+                    className="
+                    flex items-center gap-2
+                    px-5 py-2
+                    rounded-lg
+                    bg-blue-600
+                    text-white
+                    text-sm
+                    font-medium
+                    hover:bg-blue-700
+                    transition
+                    disabled:bg-gray-400
+                    "
                 >
+
                     {loading ? "Sending..." : "Send"}
+
+                    {!loading && <SendHorizonal size={16} />}
+
                 </button>
 
             </div>
 
         </div>
+
     );
 }

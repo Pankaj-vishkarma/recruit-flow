@@ -1,55 +1,72 @@
+import { User, Bot } from "lucide-react";
+
 export default function MessageBubble({ message }) {
 
     const isUser = message?.role === "user";
 
     return (
+
         <div
-            style={{
-                display: "flex",
-                justifyContent: isUser ? "flex-end" : "flex-start",
-                marginBottom: "14px",
-                width: "100%"
-            }}
+            className={`flex w-full mb-4 items-end gap-2 
+            ${isUser ? "justify-end" : "justify-start"}
+            `}
         >
 
+            {/* AI Avatar */}
+
+            {!isUser && (
+
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+
+                    <Bot size={16} className="text-blue-600" />
+
+                </div>
+
+            )}
+
+
             <div
-                style={{
-                    maxWidth: "75%",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: isUser ? "flex-end" : "flex-start"
-                }}
+                className={`flex flex-col max-w-[80%] 
+                ${isUser ? "items-end" : "items-start"}
+                `}
             >
 
-                {/* Sender Label */}
+                {/* Sender */}
 
-                <span
-                    style={{
-                        fontSize: "11px",
-                        color: "#666",
-                        marginBottom: "4px"
-                    }}
-                >
-                    {isUser ? "You" : "AI Assistant"}
+                <span className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+
+                    {isUser ? (
+                        <>
+                            <User size={12} />
+                            You
+                        </>
+                    ) : (
+                        <>
+                            <Bot size={12} />
+                            AI Assistant
+                        </>
+                    )}
+
                 </span>
 
 
-                {/* Message Bubble */}
+                {/* Bubble */}
 
                 <div
-                    style={{
-                        padding: "10px 14px",
-                        borderRadius: "14px",
-                        background: isUser ? "#2563eb" : "#f1f5f9",
-                        color: isUser ? "#fff" : "#111",
-                        fontSize: "14px",
-                        lineHeight: "1.4",
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
-                        boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-                        borderTopRightRadius: isUser ? "4px" : "14px",
-                        borderTopLeftRadius: isUser ? "14px" : "4px"
-                    }}
+                    className={`
+                    px-4 py-2
+                    rounded-2xl
+                    text-sm
+                    whitespace-pre-wrap
+                    break-words
+                    shadow-sm
+                    transition
+                    hover:shadow-md
+                    ${isUser
+                            ? "bg-blue-600 text-white rounded-tr-sm"
+                            : "bg-gray-100 text-gray-800 rounded-tl-sm"
+                        }
+                    `}
                 >
 
                     {typeof message.text === "string"
@@ -59,17 +76,11 @@ export default function MessageBubble({ message }) {
                 </div>
 
 
-                {/* Timestamp */}
+                {/* Time */}
 
                 {message?.time && (
 
-                    <span
-                        style={{
-                            fontSize: "10px",
-                            color: "#999",
-                            marginTop: "4px"
-                        }}
-                    >
+                    <span className="text-[10px] text-gray-400 mt-1">
                         {message.time}
                     </span>
 
@@ -77,6 +88,20 @@ export default function MessageBubble({ message }) {
 
             </div>
 
+
+            {/* User Avatar */}
+
+            {isUser && (
+
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+
+                    <User size={16} className="text-white" />
+
+                </div>
+
+            )}
+
         </div>
+
     );
 }
