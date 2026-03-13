@@ -27,8 +27,6 @@ export default function HRLayout({ children }) {
     const navItems = [
         { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
         { name: "Candidates", href: "/candidates", icon: Users },
-        { name: "Calendar", href: "/calendar", icon: CalendarDays },
-        { name: "Chat", href: "/chat", icon: MessageSquare },
     ];
 
     const handleLogout = () => {

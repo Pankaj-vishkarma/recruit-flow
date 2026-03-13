@@ -65,32 +65,36 @@ export default function RegisterPage() {
 
     return (
 
-        <div className="relative min-h-screen flex items-center justify-center px-4 text-gray-200 overflow-hidden">
+        <div className="relative min-h-screen flex items-center justify-center px-4 text-gray-200 overflow-hidden bg-[#020617]">
 
-            {/* Galaxy Background */}
             <GalaxyBackground />
 
             <motion.div
-                initial={{ opacity: 0, y: 25 }}
+                initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="relative z-10 w-full max-w-md bg-black/60 backdrop-blur-xl border border-gray-800 p-8 rounded-xl shadow-2xl"
+                transition={{ duration: 0.5 }}
+                className="relative z-10 w-full max-w-md
+                bg-[#0f172a]/70
+                backdrop-blur-2xl
+                border border-white/10
+                shadow-[0_20px_80px_rgba(0,0,0,0.7)]
+                p-8 rounded-2xl"
             >
 
                 {/* Brand */}
 
                 <div className="flex flex-col items-center mb-6">
 
-                    <div className="bg-indigo-600/20 p-3 rounded-full mb-2">
-                        <Briefcase size={24} className="text-indigo-400" />
+                    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl mb-3 shadow-lg">
+                        <Briefcase size={24} className="text-white" />
                     </div>
 
-                    <h2 className="text-2xl font-semibold text-white tracking-wide">
+                    <h2 className="text-2xl font-bold text-white tracking-tight">
                         RecruitFlow
                     </h2>
 
-                    <p className="text-xs text-gray-400">
-                        AI Recruitment Platform
+                    <p className="text-xs text-gray-400 mt-1">
+                        AI Powered Hiring Platform
                     </p>
 
                 </div>
@@ -112,20 +116,44 @@ export default function RegisterPage() {
                     {/* Name */}
 
                     <input
-                        placeholder="Name"
+                        placeholder="Full name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full border border-gray-700 bg-black/40 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                        className="w-full 
+                        bg-white/[0.04]
+                        border border-white/10
+                        focus:border-indigo-500
+                        text-white
+                        rounded-lg
+                        px-4 py-2.5
+                        text-sm
+                        placeholder:text-gray-500
+                        focus:outline-none
+                        focus:ring-2
+                        focus:ring-indigo-500/30
+                        transition-all"
                     />
 
                     {/* Email */}
 
                     <input
                         type="email"
-                        placeholder="Email"
+                        placeholder="Email address"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full border border-gray-700 bg-black/40 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                        className="w-full 
+                        bg-white/[0.04]
+                        border border-white/10
+                        focus:border-indigo-500
+                        text-white
+                        rounded-lg
+                        px-4 py-2.5
+                        text-sm
+                        placeholder:text-gray-500
+                        focus:outline-none
+                        focus:ring-2
+                        focus:ring-indigo-500/30
+                        transition-all"
                     />
 
                     {/* Password */}
@@ -137,15 +165,27 @@ export default function RegisterPage() {
                             placeholder="Password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full border border-gray-700 bg-black/40 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                            className="w-full 
+                            bg-white/[0.04]
+                            border border-white/10
+                            focus:border-indigo-500
+                            text-white
+                            rounded-lg
+                            px-4 py-2.5
+                            text-sm
+                            placeholder:text-gray-500
+                            focus:outline-none
+                            focus:ring-2
+                            focus:ring-indigo-500/30
+                            transition-all"
                         />
 
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-2 text-gray-400 hover:text-white"
+                            className="absolute right-3 top-2.5 text-gray-500 hover:text-indigo-400 transition"
                         >
-                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
 
                     </div>
@@ -155,9 +195,16 @@ export default function RegisterPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 rounded-lg transition hover:scale-[1.02]"
+                        className="w-full
+                        bg-gradient-to-r from-indigo-500 to-purple-600
+                        hover:from-indigo-600 hover:to-purple-700
+                        text-white text-sm font-medium
+                        py-2.5 rounded-lg
+                        shadow-lg
+                        transition-all
+                        hover:scale-[1.02]"
                     >
-                        {loading ? "Registering..." : "Register"}
+                        {loading ? "Registering..." : "Create Account"}
                     </button>
 
                 </form>
@@ -166,9 +213,13 @@ export default function RegisterPage() {
 
                 <div className="flex items-center gap-3 my-5">
 
-                    <div className="flex-1 h-px bg-gray-700"></div>
-                    <span className="text-xs text-gray-400">OR</span>
-                    <div className="flex-1 h-px bg-gray-700"></div>
+                    <div className="flex-1 h-px bg-white/10"></div>
+
+                    <span className="text-xs text-gray-400">
+                        OR
+                    </span>
+
+                    <div className="flex-1 h-px bg-white/10"></div>
 
                 </div>
 
@@ -178,14 +229,28 @@ export default function RegisterPage() {
 
                     <button
                         onClick={() => setShowModal(true)}
-                        className="w-full border border-gray-700 hover:border-indigo-500 py-2 rounded-lg text-sm transition"
+                        className="w-full
+                        bg-white/[0.04]
+                        border border-white/10
+                        hover:border-indigo-500
+                        hover:bg-white/[0.06]
+                        py-2.5 rounded-lg
+                        text-sm
+                        transition-all"
                     >
                         Continue with Google
                     </button>
 
                     <button
                         onClick={() => setShowModal(true)}
-                        className="w-full border border-gray-700 hover:border-indigo-500 py-2 rounded-lg text-sm transition"
+                        className="w-full
+                        bg-white/[0.04]
+                        border border-white/10
+                        hover:border-indigo-500
+                        hover:bg-white/[0.06]
+                        py-2.5 rounded-lg
+                        text-sm
+                        transition-all"
                     >
                         Continue with GitHub
                     </button>
@@ -194,28 +259,37 @@ export default function RegisterPage() {
 
                 {/* Login Link */}
 
-                <p className="mt-5 text-sm text-center text-gray-400">
+                <p className="mt-6 text-sm text-center text-gray-400">
+
                     Already have an account?{" "}
+
                     <Link
                         href="/login"
-                        className="text-indigo-400 hover:text-indigo-300 transition"
+                        className="text-indigo-400 hover:text-indigo-300 font-medium transition"
                     >
                         Login
                     </Link>
+
                 </p>
 
             </motion.div>
 
-            {/* Coming Soon Modal */}
+            {/* Modal */}
 
             {showModal && (
 
                 <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
 
                     <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
+                        initial={{ scale: 0.85, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="bg-gray-900 border border-gray-700 rounded-xl p-6 text-center max-w-sm"
+                        className="bg-[#0f172a]
+                        border border-white/10
+                        rounded-2xl
+                        p-6
+                        text-center
+                        max-w-sm
+                        shadow-xl"
                     >
 
                         <h3 className="text-lg font-semibold text-white mb-2">
@@ -228,7 +302,7 @@ export default function RegisterPage() {
 
                         <button
                             onClick={() => setShowModal(false)}
-                            className="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm"
+                            className="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm transition"
                         >
                             Close
                         </button>
@@ -240,6 +314,5 @@ export default function RegisterPage() {
             )}
 
         </div>
-
     );
 }
