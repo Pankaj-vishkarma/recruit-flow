@@ -7,25 +7,25 @@ export default function CandidateChatPage() {
 
     return (
 
-        <div className="max-w-5xl mx-auto px-4 py-6 lg:py-10">
+        <div className="flex flex-col h-full max-w-6xl mx-auto px-4 py-6 lg:py-8">
 
             {/* Page Header */}
 
-            <div className="mb-8">
+            <div className="mb-6">
 
                 <div className="flex items-center gap-3 mb-2">
 
-                    <div className="bg-blue-100 text-blue-600 p-2 rounded-lg">
+                    <div className="bg-indigo-600/20 text-indigo-400 p-2 rounded-lg">
                         <MessageSquare size={20} />
                     </div>
 
-                    <h1 className="text-2xl font-semibold text-gray-800">
+                    <h1 className="text-2xl font-semibold text-white">
                         AI Interview Chat
                     </h1>
 
                 </div>
 
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-400">
                     Practice your interview with our AI interviewer.
                     Answer questions and receive instant feedback.
                 </p>
@@ -33,9 +33,9 @@ export default function CandidateChatPage() {
             </div>
 
 
-            {/* Chat Container */}
+            {/* Chat */}
 
-            <div className="bg-white border rounded-xl shadow-sm hover:shadow-md transition duration-200 p-4 sm:p-6 min-h-[500px] flex flex-col flex-1">
+            <div className="flex-1 min-h-0">
 
                 <ChatBox />
 
@@ -44,4 +44,5 @@ export default function CandidateChatPage() {
         </div>
 
     );
+
 }

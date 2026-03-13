@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isAuthenticated } from "@/lib/auth";
+import { motion } from "framer-motion";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -41,9 +42,7 @@ export default function DashboardPage() {
                     return;
                 }
 
-                /* ---------------------- */
                 /* Fetch dashboard stats */
-                /* ---------------------- */
 
                 const statsRes = await fetch(`${API_URL}/dashboard/stats`, {
                     signal: controller.signal,
@@ -71,9 +70,7 @@ export default function DashboardPage() {
                 setStats(statsData?.data || {});
 
 
-                /* ---------------------- */
                 /* Fetch pipeline data */
-                /* ---------------------- */
 
                 const pipeRes = await fetch(`${API_URL}/dashboard/pipeline`, {
                     signal: controller.signal,
@@ -122,7 +119,7 @@ export default function DashboardPage() {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-[60vh] text-gray-500">
+            <div className="flex justify-center items-center h-[60vh] text-gray-400 text-lg">
                 Loading dashboard...
             </div>
         );
@@ -130,7 +127,7 @@ export default function DashboardPage() {
 
     if (error) {
         return (
-            <div className="text-center text-red-500 py-20">
+            <div className="text-center text-red-400 py-20">
                 {error}
             </div>
         );
@@ -141,7 +138,7 @@ export default function DashboardPage() {
 
         <div className="space-y-10">
 
-            <h1 className="text-2xl font-semibold text-gray-800">
+            <h1 className="text-3xl font-bold text-white tracking-wide">
                 HR Dashboard
             </h1>
 
@@ -171,25 +168,29 @@ export default function DashboardPage() {
 
 
 
-/* ---------------------- */
 /* Dashboard Card */
-/* ---------------------- */
 
 function DashboardCard({ title, value }) {
 
     return (
 
-        <div className="bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition">
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            whileHover={{ scale: 1.05 }}
+            className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-xl p-6 shadow-lg transition-all"
+        >
 
-            <p className="text-sm text-gray-500 mb-2">
+            <p className="text-sm text-gray-300 mb-2">
                 {title}
             </p>
 
-            <h3 className="text-xl font-semibold text-gray-900">
+            <h3 className="text-2xl font-semibold text-white">
                 {value}
             </h3>
 
-        </div>
+        </motion.div>
 
     );
 
@@ -197,9 +198,7 @@ function DashboardCard({ title, value }) {
 
 
 
-/* ---------------------- */
 /* Pipeline Visualization */
-/* ---------------------- */
 
 function PipelineView({ data }) {
 
@@ -214,9 +213,9 @@ function PipelineView({ data }) {
 
     return (
 
-        <div className="bg-white border rounded-xl p-6 shadow-sm">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-xl p-8 shadow-lg">
 
-            <h3 className="text-lg font-semibold mb-6 text-gray-800">
+            <h3 className="text-lg font-semibold mb-6 text-white">
                 Candidate Pipeline
             </h3>
 
@@ -224,12 +223,13 @@ function PipelineView({ data }) {
 
                 {stages.map((stage) => (
 
-                    <div
+                    <motion.div
                         key={stage.name}
-                        className="bg-blue-600 text-white rounded-lg p-4 text-center"
+                        whileHover={{ scale: 1.05 }}
+                        className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg p-4 text-center shadow-lg"
                     >
 
-                        <div className="text-sm">
+                        <div className="text-sm opacity-90">
                             {stage.name}
                         </div>
 
@@ -237,7 +237,7 @@ function PipelineView({ data }) {
                             {stage.value}
                         </strong>
 
-                    </div>
+                    </motion.div>
 
                 ))}
 

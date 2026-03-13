@@ -10,24 +10,20 @@ export default function CalendarPage() {
 
             <div className="text-center">
 
-                <h1 className="text-2xl font-semibold text-gray-800">
+                <h1 className="text-2xl font-semibold text-white">
                     Interview Calendar
                 </h1>
 
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-sm text-gray-400 mt-2">
                     Select an available time slot for your technical interview.
                 </p>
 
             </div>
 
 
-            {/* Calendar Container */}
+            {/* Calendar Component */}
 
-            <div className="bg-white border rounded-xl shadow-sm p-4 sm:p-6 lg:p-8">
-
-                <CalendarGrid />
-
-            </div>
+            <CalendarGrid />
 
         </div>
 

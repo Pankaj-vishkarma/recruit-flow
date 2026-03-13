@@ -64,7 +64,7 @@ export default function CandidateProfilePage() {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-[60vh] text-gray-500">
+            <div className="flex justify-center items-center h-[60vh] text-gray-400">
                 Loading profile...
             </div>
         );
@@ -80,17 +80,17 @@ export default function CandidateProfilePage() {
 
                 <div className="flex items-center gap-3 mb-2">
 
-                    <div className="bg-blue-100 text-blue-600 p-2 rounded-lg">
+                    <div className="bg-indigo-600/20 text-indigo-400 p-2 rounded-lg">
                         <User size={20} />
                     </div>
 
-                    <h1 className="text-2xl font-semibold text-gray-800">
+                    <h1 className="text-2xl font-semibold text-white">
                         Candidate Profile
                     </h1>
 
                 </div>
 
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-400">
                     Update your personal information, experience, and skills.
                 </p>
 
@@ -99,14 +99,14 @@ export default function CandidateProfilePage() {
 
             {/* Profile Card */}
 
-            <div className="bg-white border rounded-xl shadow-sm hover:shadow-md transition duration-200 p-6 space-y-6">
+            <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl hover:shadow-lg transition duration-200 p-6 space-y-6">
 
 
                 {/* Name */}
 
                 <div className="flex flex-col gap-2">
 
-                    <label className="text-sm text-gray-600">
+                    <label className="text-sm text-gray-400">
                         Name
                     </label>
 
@@ -114,7 +114,7 @@ export default function CandidateProfilePage() {
                         name="name"
                         value={profile.name || ""}
                         onChange={handleChange}
-                        className="border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                        className="bg-black/40 border border-gray-700 text-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
                     />
 
                 </div>
@@ -124,7 +124,7 @@ export default function CandidateProfilePage() {
 
                 <div className="flex flex-col gap-2">
 
-                    <label className="text-sm text-gray-600">
+                    <label className="text-sm text-gray-400">
                         Experience
                     </label>
 
@@ -132,7 +132,7 @@ export default function CandidateProfilePage() {
                         name="experience"
                         value={profile.experience || ""}
                         onChange={handleChange}
-                        className="border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                        className="bg-black/40 border border-gray-700 text-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
                     />
 
                 </div>
@@ -142,7 +142,7 @@ export default function CandidateProfilePage() {
 
                 <div className="flex flex-col gap-2">
 
-                    <label className="text-sm text-gray-600">
+                    <label className="text-sm text-gray-400">
                         Skills (comma separated)
                     </label>
 
@@ -150,7 +150,7 @@ export default function CandidateProfilePage() {
                         name="skills"
                         value={profile.skills || ""}
                         onChange={handleChange}
-                        className="border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                        className="bg-black/40 border border-gray-700 text-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
                     />
 
                 </div>
@@ -162,7 +162,7 @@ export default function CandidateProfilePage() {
 
                     <button
                         onClick={handleSave}
-                        className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                        className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition"
                     >
 
                         <Save size={16} />

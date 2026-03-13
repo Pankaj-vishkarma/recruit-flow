@@ -16,9 +16,9 @@ export default function MessageBubble({ message }) {
 
             {!isUser && (
 
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-500/20 border border-white/10 flex items-center justify-center">
 
-                    <Bot size={16} className="text-blue-600" />
+                    <Bot size={16} className="text-indigo-400" />
 
                 </div>
 
@@ -33,7 +33,7 @@ export default function MessageBubble({ message }) {
 
                 {/* Sender */}
 
-                <span className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                <span className="text-xs text-gray-400 mb-1 flex items-center gap-1">
 
                     {isUser ? (
                         <>
@@ -59,12 +59,10 @@ export default function MessageBubble({ message }) {
                     text-sm
                     whitespace-pre-wrap
                     break-words
-                    shadow-sm
                     transition
-                    hover:shadow-md
                     ${isUser
-                            ? "bg-blue-600 text-white rounded-tr-sm"
-                            : "bg-gray-100 text-gray-800 rounded-tl-sm"
+                            ? "bg-indigo-600 text-white rounded-tr-sm"
+                            : "bg-white/5 backdrop-blur border border-white/10 text-gray-200 rounded-tl-sm"
                         }
                     `}
                 >
@@ -80,7 +78,7 @@ export default function MessageBubble({ message }) {
 
                 {message?.time && (
 
-                    <span className="text-[10px] text-gray-400 mt-1">
+                    <span className="text-[10px] text-gray-500 mt-1">
                         {message.time}
                     </span>
 
@@ -93,7 +91,7 @@ export default function MessageBubble({ message }) {
 
             {isUser && (
 
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center">
 
                     <User size={16} className="text-white" />
 

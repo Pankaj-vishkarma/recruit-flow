@@ -128,7 +128,7 @@ export default function CandidatesPage() {
 
     if (loading) {
         return (
-            <div className="py-20 text-center text-gray-500">
+            <div className="py-20 text-center text-gray-400">
                 Loading candidates...
             </div>
         );
@@ -136,7 +136,7 @@ export default function CandidatesPage() {
 
     if (error) {
         return (
-            <div className="py-20 text-center text-red-500">
+            <div className="py-20 text-center text-red-400">
                 {error}
             </div>
         );
@@ -148,27 +148,27 @@ export default function CandidatesPage() {
 
         <div className="space-y-6">
 
-            <h1 className="text-2xl font-semibold text-gray-800">
+            <h1 className="text-2xl font-semibold text-white">
                 Candidates
             </h1>
 
 
             {/* Desktop Table */}
 
-            <div className="hidden md:block bg-white rounded-xl shadow-sm border overflow-x-auto">
+            <div className="hidden md:block glass rounded-xl border border-white/10 overflow-x-auto">
 
                 <table className="min-w-full text-sm">
 
-                    <thead className="bg-gray-50">
+                    <thead className="border-b border-white/10 bg-white/5">
 
                         <tr>
 
-                            <th className="px-4 py-3 text-left text-gray-600">Name</th>
-                            <th className="px-4 py-3 text-left text-gray-600">Skills</th>
-                            <th className="px-4 py-3 text-left text-gray-600">Interview</th>
-                            <th className="px-4 py-3 text-left text-gray-600">Status</th>
-                            <th className="px-4 py-3 text-left text-gray-600">Onboarding</th>
-                            <th className="px-4 py-3 text-left text-gray-600">Actions</th>
+                            <th className="px-4 py-3 text-left text-gray-300">Name</th>
+                            <th className="px-4 py-3 text-left text-gray-300">Skills</th>
+                            <th className="px-4 py-3 text-left text-gray-300">Interview</th>
+                            <th className="px-4 py-3 text-left text-gray-300">Status</th>
+                            <th className="px-4 py-3 text-left text-gray-300">Onboarding</th>
+                            <th className="px-4 py-3 text-left text-gray-300">Actions</th>
 
                         </tr>
 
@@ -179,7 +179,7 @@ export default function CandidatesPage() {
                         {candidates.length === 0 && (
 
                             <tr>
-                                <td colSpan="6" className="text-center py-6">
+                                <td colSpan="6" className="text-center py-6 text-gray-400">
                                     No candidates found
                                 </td>
                             </tr>
@@ -188,17 +188,17 @@ export default function CandidatesPage() {
 
                         {candidates.map((candidate) => (
 
-                            <tr key={candidate._id} className="border-t">
+                            <tr key={candidate._id} className="border-t border-white/5 hover:bg-white/5 transition">
 
                                 <td className="px-4 py-3">
                                     {candidate.name}
                                 </td>
 
-                                <td className="px-4 py-3">
+                                <td className="px-4 py-3 text-gray-300">
                                     {candidate.skills?.join(", ") || "None"}
                                 </td>
 
-                                <td className="px-4 py-3">
+                                <td className="px-4 py-3 text-gray-300">
                                     {candidate.scheduled_time || "Not scheduled"}
                                 </td>
 
@@ -206,7 +206,7 @@ export default function CandidatesPage() {
                                     <StatusBadge status={candidate.status || "Pending"} />
                                 </td>
 
-                                <td className="px-4 py-3">
+                                <td className="px-4 py-3 text-gray-300">
                                     {candidate.onboarding_complete ? "Completed" : "Pending"}
                                 </td>
 
@@ -215,7 +215,7 @@ export default function CandidatesPage() {
                                     <button
                                         disabled={actionLoading}
                                         onClick={() => handleStatus(candidate._id, "shortlisted")}
-                                        className="px-3 py-1 rounded bg-blue-600 text-white text-xs hover:bg-blue-700"
+                                        className="px-3 py-1 rounded bg-indigo-600 text-white text-xs hover:bg-indigo-700"
                                     >
                                         Shortlist
                                     </button>
@@ -231,7 +231,7 @@ export default function CandidatesPage() {
                                     <button
                                         disabled={actionLoading}
                                         onClick={() => handleDelete(candidate._id)}
-                                        className="px-3 py-1 rounded bg-gray-900 text-white text-xs hover:bg-black"
+                                        className="px-3 py-1 rounded bg-gray-800 text-white text-xs hover:bg-black"
                                     >
                                         Delete
                                     </button>
@@ -255,11 +255,11 @@ export default function CandidatesPage() {
 
                 {candidates.map((candidate) => (
 
-                    <div key={candidate._id} className="bg-white border rounded-xl p-4 shadow-sm">
+                    <div key={candidate._id} className="glass border border-white/10 rounded-xl p-4">
 
                         <div className="flex justify-between mb-2">
 
-                            <h3 className="font-medium">
+                            <h3 className="font-medium text-white">
                                 {candidate.name}
                             </h3>
 
@@ -267,15 +267,15 @@ export default function CandidatesPage() {
 
                         </div>
 
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-400">
                             Skills: {candidate.skills?.join(", ") || "None"}
                         </p>
 
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-400">
                             Interview: {candidate.scheduled_time || "Not scheduled"}
                         </p>
 
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-gray-400">
                             Onboarding: {candidate.onboarding_complete ? "Completed" : "Pending"}
                         </p>
 
@@ -284,7 +284,7 @@ export default function CandidatesPage() {
                             <button
                                 disabled={actionLoading}
                                 onClick={() => handleStatus(candidate._id, "shortlisted")}
-                                className="flex-1 py-1 rounded bg-blue-600 text-white text-xs"
+                                className="flex-1 py-1 rounded bg-indigo-600 text-white text-xs"
                             >
                                 Shortlist
                             </button>
@@ -300,7 +300,7 @@ export default function CandidatesPage() {
                             <button
                                 disabled={actionLoading}
                                 onClick={() => handleDelete(candidate._id)}
-                                className="flex-1 py-1 rounded bg-gray-900 text-white text-xs"
+                                className="flex-1 py-1 rounded bg-gray-800 text-white text-xs"
                             >
                                 Delete
                             </button>
@@ -322,19 +322,19 @@ export default function CandidatesPage() {
                 <button
                     onClick={() => setPage(page - 1)}
                     disabled={page === 1 || loading}
-                    className="px-4 py-2 rounded bg-blue-600 text-white text-sm disabled:bg-gray-400"
+                    className="px-4 py-2 rounded bg-indigo-600 text-white text-sm disabled:bg-gray-600"
                 >
                     Previous
                 </button>
 
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-300">
                     Page {page}
                 </span>
 
                 <button
                     onClick={() => setPage(page + 1)}
                     disabled={loading}
-                    className="px-4 py-2 rounded bg-blue-600 text-white text-sm disabled:bg-gray-400"
+                    className="px-4 py-2 rounded bg-indigo-600 text-white text-sm disabled:bg-gray-600"
                 >
                     Next
                 </button>

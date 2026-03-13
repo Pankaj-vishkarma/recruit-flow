@@ -65,7 +65,7 @@ export default function CandidateDashboard() {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-[60vh] text-gray-500">
+            <div className="flex justify-center items-center h-[60vh] text-gray-400">
                 Loading dashboard...
             </div>
         );
@@ -73,14 +73,14 @@ export default function CandidateDashboard() {
 
     if (error) {
         return (
-            <div className="text-center text-red-500">
+            <div className="text-center text-red-400">
                 {error}
             </div>
         );
     }
 
     if (!data) {
-        return <div>No dashboard data available</div>;
+        return <div className="text-gray-400">No dashboard data available</div>;
     }
 
     const currentStageIndex = stages.includes(data?.status)
@@ -91,7 +91,7 @@ export default function CandidateDashboard() {
 
         <div className="space-y-10">
 
-            <h1 className="text-2xl font-semibold text-gray-800">
+            <h1 className="text-2xl font-semibold text-white">
                 Candidate Dashboard
             </h1>
 
@@ -129,9 +129,9 @@ export default function CandidateDashboard() {
 
             {/* Recruitment Progress */}
 
-            <div className="bg-white rounded-xl shadow-sm border p-6 transition hover:shadow-md">
+            <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-6 transition hover:shadow-lg">
 
-                <h3 className="text-lg font-semibold mb-6 text-gray-800">
+                <h3 className="text-lg font-semibold mb-6 text-white">
                     Recruitment Progress
                 </h3>
 
@@ -148,7 +148,7 @@ export default function CandidateDashboard() {
                                 className={`px-4 py-2 rounded-full text-sm font-medium capitalize transition
                                 ${completed
                                         ? "bg-green-500 text-white shadow"
-                                        : "bg-gray-200 text-gray-600"
+                                        : "bg-gray-800 text-gray-400"
                                     }`}
                             >
                                 {stage}
@@ -170,16 +170,16 @@ export default function CandidateDashboard() {
 
                 {/* Interview Status */}
 
-                <div className="bg-white rounded-xl shadow-sm border p-6 transition hover:shadow-md">
+                <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-6 transition hover:shadow-lg">
 
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-800">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
                         <CalendarDays size={18} />
                         Interview Status
                     </h3>
 
                     {data?.scheduled_time ? (
 
-                        <div className="bg-blue-50 text-blue-700 p-4 rounded-lg transition">
+                        <div className="bg-indigo-600/20 text-indigo-300 p-4 rounded-lg transition">
 
                             📅 Interview Scheduled: {data.scheduled_time}
 
@@ -187,7 +187,7 @@ export default function CandidateDashboard() {
 
                     ) : (
 
-                        <div className="bg-yellow-50 text-yellow-700 p-4 rounded-lg">
+                        <div className="bg-yellow-500/20 text-yellow-300 p-4 rounded-lg">
 
                             ⏳ Interview not scheduled yet
 
@@ -200,9 +200,9 @@ export default function CandidateDashboard() {
 
                 {/* Resume Upload */}
 
-                <div className="bg-white rounded-xl shadow-sm border p-6 transition hover:shadow-md">
+                <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-6 transition hover:shadow-lg">
 
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-800">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
                         <Upload size={18} />
                         Upload Resume
                     </h3>
@@ -210,7 +210,7 @@ export default function CandidateDashboard() {
                     <input
                         type="file"
                         accept=".pdf"
-                        className="border p-2 rounded-lg w-full cursor-pointer hover:border-gray-400 transition"
+                        className="border border-gray-700 bg-black/40 text-gray-300 p-2 rounded-lg w-full cursor-pointer hover:border-gray-500 transition"
                         onChange={async (e) => {
 
                             const file = e.target.files[0];
@@ -250,9 +250,9 @@ export default function CandidateDashboard() {
 
             {/* Candidate Info */}
 
-            <div className="bg-white rounded-xl shadow-sm border p-6 transition hover:shadow-md">
+            <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 p-6 transition hover:shadow-lg">
 
-                <h3 className="text-lg font-semibold mb-6 text-gray-800">
+                <h3 className="text-lg font-semibold mb-6 text-white">
                     Candidate Information
                 </h3>
 
@@ -265,7 +265,7 @@ export default function CandidateDashboard() {
 
                     <div>
 
-                        <p className="text-sm text-gray-500 mb-2">
+                        <p className="text-sm text-gray-400 mb-2">
                             Skills
                         </p>
 
@@ -275,13 +275,13 @@ export default function CandidateDashboard() {
                                 data.skills.map((skill) => (
                                     <span
                                         key={skill}
-                                        className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm transition hover:bg-blue-200"
+                                        className="bg-indigo-600/20 text-indigo-300 px-3 py-1 rounded-full text-sm transition hover:bg-indigo-600/40"
                                     >
                                         {skill}
                                     </span>
                                 ))
                             ) : (
-                                <p className="text-gray-500">
+                                <p className="text-gray-400">
                                     Not added
                                 </p>
                             )}
@@ -305,25 +305,26 @@ export default function CandidateDashboard() {
 function StatCard({ icon, title, value }) {
 
     return (
-        <div className="bg-white border rounded-xl p-5 shadow-sm hover:shadow-md transition group">
+        <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl p-5 hover:shadow-lg transition group">
 
             <div className="flex items-center justify-between mb-3">
 
-                <div className="text-gray-500 group-hover:text-blue-600 transition">
+                <div className="text-gray-400 group-hover:text-indigo-400 transition">
                     {icon}
                 </div>
 
             </div>
 
-            <p className="text-sm text-gray-500 mb-1">
+            <p className="text-sm text-gray-400 mb-1">
                 {title}
             </p>
 
-            <p className="text-xl font-semibold text-gray-800">
+            <p className="text-xl font-semibold text-white">
                 {value}
             </p>
 
         </div>
+
     );
 
 }
@@ -336,11 +337,11 @@ function Info({ label, value }) {
     return (
         <div>
 
-            <p className="text-sm text-gray-500 mb-1">
+            <p className="text-sm text-gray-400 mb-1">
                 {label}
             </p>
 
-            <p className="font-medium text-gray-800">
+            <p className="font-medium text-white">
                 {value || "Not available"}
             </p>
 

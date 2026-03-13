@@ -73,25 +73,9 @@ export default function CalendarGrid() {
 
     return (
 
-        <div
-            style={{
-                maxWidth: "820px",
-                margin: "auto",
-                padding: "30px",
-                background: "#fff",
-                borderRadius: "12px",
-                boxShadow: "0 8px 30px rgba(0,0,0,0.08)"
-            }}
-        >
+        <div className="glass max-w-3xl mx-auto p-8 rounded-xl border border-white/10">
 
-            <h2
-                style={{
-                    textAlign: "center",
-                    marginBottom: "25px",
-                    fontSize: "22px",
-                    fontWeight: "600"
-                }}
-            >
+            <h2 className="text-center mb-6 text-xl font-semibold text-white">
                 Schedule Your Interview
             </h2>
 
@@ -100,10 +84,9 @@ export default function CalendarGrid() {
             {/* Calendar Grid */}
 
             <div
+                className="grid gap-4"
                 style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-                    gap: "14px"
+                    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))"
                 }}
             >
 
@@ -126,28 +109,16 @@ export default function CalendarGrid() {
 
                             disabled={loading}
 
-                            style={{
-                                padding: "16px",
-                                borderRadius: "10px",
-                                border: isSelected
-                                    ? "2px solid #2563eb"
-                                    : "1px solid #ddd",
-                                background: isSelected
-                                    ? "#2563eb"
-                                    : "#f8fafc",
-                                color: isSelected
-                                    ? "#fff"
-                                    : "#333",
-                                cursor: loading ? "not-allowed" : "pointer",
-                                fontWeight: "500",
-                                transition: "0.2s",
-                                boxShadow: isSelected
-                                    ? "0 4px 12px rgba(37,99,235,0.3)"
-                                    : "none"
-                            }}
+                            className={`
+                                p-4 rounded-lg border text-sm font-medium transition
+                                ${isSelected
+                                    ? "bg-indigo-600 text-white border-indigo-500 shadow-lg"
+                                    : "bg-white/5 text-gray-200 border-white/10 hover:bg-white/10"}
+                                ${loading ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
+                            `}
                         >
                             <div>{slot.day}</div>
-                            <div style={{ fontSize: "13px" }}>
+                            <div className="text-xs opacity-80">
                                 {slot.time}
                             </div>
                         </button>
@@ -163,14 +134,9 @@ export default function CalendarGrid() {
 
             {selectedSlot && !confirmed && (
 
-                <div
-                    style={{
-                        marginTop: "25px",
-                        textAlign: "center"
-                    }}
-                >
+                <div className="mt-6 text-center">
 
-                    <p style={{ marginBottom: "10px" }}>
+                    <p className="mb-3 text-gray-300">
                         Selected Slot:{" "}
                         <b>
                             {selectedSlot.day} {selectedSlot.time}
@@ -180,15 +146,16 @@ export default function CalendarGrid() {
                     <button
                         onClick={handleConfirm}
                         disabled={loading}
-                        style={{
-                            padding: "12px 24px",
-                            borderRadius: "8px",
-                            border: "none",
-                            background: "#16a34a",
-                            color: "#fff",
-                            cursor: loading ? "not-allowed" : "pointer",
-                            fontWeight: "500"
-                        }}
+                        className="
+                            px-6 py-3
+                            rounded-lg
+                            bg-green-600
+                            text-white
+                            font-medium
+                            hover:bg-green-700
+                            transition
+                            disabled:opacity-60
+                        "
                     >
                         {loading ? "Scheduling..." : "Confirm Interview"}
                     </button>
@@ -203,15 +170,7 @@ export default function CalendarGrid() {
 
             {confirmed && (
 
-                <div
-                    style={{
-                        marginTop: "25px",
-                        textAlign: "center",
-                        color: "#16a34a",
-                        fontWeight: "600",
-                        fontSize: "16px"
-                    }}
-                >
+                <div className="mt-6 text-center text-green-400 font-semibold text-sm">
                     ✅ Interview successfully scheduled for{" "}
                     <b>
                         {selectedSlot.day} {selectedSlot.time}
@@ -226,13 +185,7 @@ export default function CalendarGrid() {
 
             {error && (
 
-                <div
-                    style={{
-                        marginTop: "15px",
-                        textAlign: "center",
-                        color: "red"
-                    }}
-                >
+                <div className="mt-4 text-center text-red-400">
                     {error}
                 </div>
 

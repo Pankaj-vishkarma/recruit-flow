@@ -25,24 +25,20 @@ export default function ChatPage() {
 
             <div className="text-center">
 
-                <h1 className="text-2xl font-semibold text-gray-800">
+                <h1 className="text-2xl font-semibold text-white">
                     Recruit-Flow AI Interview Assistant
                 </h1>
 
-                <p className="text-sm text-gray-500 mt-2">
+                <p className="text-sm text-gray-400 mt-2">
                     Chat with the automated HR assistant to start your screening process
                 </p>
 
             </div>
 
 
-            {/* Chat Container */}
+            {/* Chat Component */}
 
-            <div className="bg-white border rounded-xl shadow-sm p-4 sm:p-6">
-
-                <ChatBox />
-
-            </div>
+            <ChatBox />
 
         </div>
 

@@ -11,15 +11,36 @@
 }
 
 /* ---------------- */
+/* Root Variables */
+/* ---------------- */
+
+:root {
+  --bg-dark: #020617;
+  --glass-bg: rgba(15, 23, 42, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+/* ---------------- */
 /* Body */
 /* ---------------- */
+
+html,
+body {
+  height: 100%;
+}
 
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, Helvetica, Arial, sans-serif;
-  background: #f8fafc;
-  color: #111827;
+
+  background: transparent;
+  /* allow galaxy canvas */
+
+  color: #e5e7eb;
+
   line-height: 1.5;
+
+  overflow-x: hidden;
 }
 
 /* ---------------- */
@@ -40,16 +61,16 @@ a {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f3f4f6;
+  background: #020617;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #374151;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #4b5563;
 }
 
 /* ---------------- */
@@ -60,6 +81,31 @@ a {
   max-width: 1200px;
   margin: auto;
   padding: 20px;
+}
+
+/* ---------------- */
+/* Glass UI */
+/* ---------------- */
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+/* ---------------- */
+/* Card Glow */
+/* ---------------- */
+
+.card-glow:hover {
+  box-shadow:
+    0 10px 30px rgba(99, 102, 241, 0.25),
+    0 0 15px rgba(139, 92, 246, 0.25);
+
+  transform: translateY(-2px);
+
+  transition: all 0.25s ease;
 }
 
 /* ---------------- */
@@ -80,4 +126,26 @@ a {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ---------------- */
+/* Page Transition */
+/* ---------------- */
+
+.page-enter {
+  animation: pageEnter 0.35s ease;
+}
+
+@keyframes pageEnter {
+
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
 }

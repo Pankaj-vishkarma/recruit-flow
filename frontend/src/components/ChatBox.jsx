@@ -120,13 +120,13 @@ export default function ChatBox() {
 
     return (
 
-        <div className="flex flex-col h-[80vh] bg-white rounded-xl shadow-sm border overflow-hidden">
+        <div className="glass flex flex-col h-[80vh] rounded-xl overflow-hidden border border-white/10">
 
             {/* Header */}
 
-            <div className="px-6 py-4 border-b bg-gray-50 flex items-center gap-2 font-semibold text-gray-800">
+            <div className="px-6 py-4 border-b border-white/10 flex items-center gap-2 font-semibold text-white">
 
-                <Bot size={18} className="text-blue-600" />
+                <Bot size={18} className="text-indigo-400" />
 
                 RecruitFlow AI Assistant
 
@@ -135,14 +135,14 @@ export default function ChatBox() {
 
             {/* Messages */}
 
-            <div className="flex-1 overflow-y-auto p-6 bg-gray-50 space-y-4">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
 
                 {messages.length === 0 && (
 
-                    <div className="text-center text-gray-500 mt-10">
+                    <div className="text-center text-gray-400 mt-10">
 
                         <div className="flex justify-center mb-3">
-                            <Bot size={28} className="text-gray-400" />
+                            <Bot size={28} className="text-gray-500" />
                         </div>
 
                         Start a conversation with the HR assistant
@@ -157,7 +157,7 @@ export default function ChatBox() {
 
                 {loading && (
 
-                    <div className="flex items-center gap-2 text-gray-500 italic">
+                    <div className="flex items-center gap-2 text-gray-400 italic">
 
                         <Bot size={16} />
 
@@ -175,7 +175,7 @@ export default function ChatBox() {
             {/* Error */}
 
             {error && (
-                <div className="text-red-500 text-sm px-6 py-2">
+                <div className="text-red-400 text-sm px-6 py-2">
                     {error}
                 </div>
             )}
@@ -183,7 +183,7 @@ export default function ChatBox() {
 
             {/* Input */}
 
-            <div className="flex gap-3 p-4 border-t bg-white">
+            <div className="flex gap-3 p-4 border-t border-white/10">
 
                 <textarea
                     ref={textareaRef}
@@ -195,13 +195,16 @@ export default function ChatBox() {
                     className="
                     flex-1
                     resize-none
-                    border
+                    bg-white/5
+                    border border-white/10
                     rounded-lg
                     px-4 py-2
                     text-sm
+                    text-white
+                    placeholder-gray-400
                     focus:outline-none
                     focus:ring-2
-                    focus:ring-blue-500
+                    focus:ring-indigo-500
                     transition
                     "
                 />
@@ -213,13 +216,13 @@ export default function ChatBox() {
                     flex items-center gap-2
                     px-5 py-2
                     rounded-lg
-                    bg-blue-600
+                    bg-indigo-600
                     text-white
                     text-sm
                     font-medium
-                    hover:bg-blue-700
+                    hover:bg-indigo-700
                     transition
-                    disabled:bg-gray-400
+                    disabled:bg-gray-600
                     "
                 >
 

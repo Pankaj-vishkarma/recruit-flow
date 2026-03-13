@@ -56,11 +56,9 @@ export default function DashboardStats({ stats }) {
     return (
 
         <div
+            className="grid gap-6 mb-8"
             style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                gap: "20px",
-                marginBottom: "30px"
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))"
             }}
         >
 
@@ -68,32 +66,22 @@ export default function DashboardStats({ stats }) {
 
                 <div
                     key={i}
+                    className="glass p-6 rounded-xl card-glow transition-all duration-300 hover:scale-[1.02]"
                     style={{
-                        background: "#fff",
-                        padding: "20px",
-                        borderRadius: "12px",
-                        boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
-                        borderLeft: `5px solid ${card.color}`
+                        borderLeft: `4px solid ${card.color}`
                     }}
                 >
 
                     <div
-                        style={{
-                            fontSize: "13px",
-                            color: "#666",
-                            marginBottom: "6px",
-                            fontWeight: "500"
-                        }}
+                        className="text-sm mb-2 font-medium"
+                        style={{ color: "#9ca3af" }}
                     >
                         {card.label}
                     </div>
 
                     <div
-                        style={{
-                            fontSize: "26px",
-                            fontWeight: "600",
-                            color: card.color
-                        }}
+                        className="text-3xl font-semibold"
+                        style={{ color: card.color }}
                     >
                         {formatNumber(card.value)}
                     </div>
@@ -105,4 +93,5 @@ export default function DashboardStats({ stats }) {
         </div>
 
     );
+
 }
