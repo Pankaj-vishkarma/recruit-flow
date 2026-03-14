@@ -74,7 +74,7 @@ export default function LoginPage() {
 
         try {
 
-            if (!credentialResponse?.credential) {
+            if (!credentialResponse || !credentialResponse.credential) {
                 setError("Google authentication failed");
                 return;
             }
@@ -249,7 +249,7 @@ export default function LoginPage() {
 
                 {/* Social Login */}
 
-                <div className="space-y-3">
+                <div className="space-y-3 flex justify-center">
 
                     <GoogleLogin
                         onSuccess={handleGoogleLogin}
@@ -258,6 +258,7 @@ export default function LoginPage() {
                         size="large"
                         text="continue_with"
                         shape="rectangular"
+                        width="100%"
                     />
 
                 </div>
