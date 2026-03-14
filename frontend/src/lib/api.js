@@ -17,25 +17,29 @@ function getToken() {
 }
 
 
-
 /* -------------------------------- */
 /* CORE API REQUEST */
 /* -------------------------------- */
 
-async function apiRequest(endpoint, options = {}) {
+async function apiRequest(endpoint, options = {}, retry = 1) {
 
     const controller = new AbortController();
 
+    // Increase timeout for Render cold start
     const timeout = setTimeout(() => {
         controller.abort();
-    }, 10000);
+    }, 60000);
 
     try {
 
         const token = getToken();
 
         const res = await fetch(`${API_URL}${endpoint}`, {
+
             ...options,
+
+            cache: "no-store",
+
             headers: {
                 "Content-Type": "application/json",
 
@@ -43,6 +47,7 @@ async function apiRequest(endpoint, options = {}) {
 
                 ...(options.headers || {})
             },
+
             signal: controller.signal
         });
 
@@ -67,19 +72,28 @@ async function apiRequest(endpoint, options = {}) {
         }
 
 
+        /* ---------------------- */
+        /* API Error Handling */
+        /* ---------------------- */
+
         if (!res.ok) {
 
             let errorMessage = "API request failed";
 
             try {
+
                 const errorData = await res.json();
                 errorMessage = errorData.detail || JSON.stringify(errorData);
+
             } catch {
+
                 errorMessage = await res.text();
+
             }
 
             throw new Error(`API ${res.status}: ${errorMessage}`);
         }
+
 
         const data = await res.json();
 
@@ -89,11 +103,31 @@ async function apiRequest(endpoint, options = {}) {
 
         console.error("API error:", error);
 
+        clearTimeout(timeout);
+
+
+        /* ---------------------- */
+        /* Retry Logic */
+        /* ---------------------- */
+
+        if (retry > 0 && error.name !== "AbortError") {
+
+            console.log("Retrying API request...");
+
+            await new Promise(res => setTimeout(res, 2000));
+
+            return apiRequest(endpoint, options, retry - 1);
+
+        }
+
+
         if (error.name === "AbortError") {
+
             return {
                 status: "error",
-                message: "Request timeout"
+                message: "Server taking too long to respond"
             };
+
         }
 
         return {
@@ -102,7 +136,6 @@ async function apiRequest(endpoint, options = {}) {
         };
     }
 }
-
 
 
 /* -------------------------------- */
@@ -125,7 +158,6 @@ export async function sendMessage(message, candidateName = "candidate") {
 }
 
 
-
 /* -------------------------------- */
 /* SCHEDULE INTERVIEW */
 /* -------------------------------- */
@@ -146,7 +178,6 @@ export async function scheduleInterview(slot, candidateName = "candidate") {
 }
 
 
-
 /* -------------------------------- */
 /* SINGLE CANDIDATE DATA */
 /* -------------------------------- */
@@ -157,15 +188,14 @@ export async function getCandidateData(candidateName = "candidate") {
 }
 
 
-
 /* -------------------------------- */
 /* CANDIDATE LIST */
 /* -------------------------------- */
 
 export async function getCandidates(page = 1, limit = 10) {
+
     return apiRequest(`/dashboard/candidates?page=${page}&limit=${limit}`);
 }
-
 
 
 /* -------------------------------- */
@@ -184,9 +214,7 @@ export async function updateCandidateStatus(id, status) {
             status
         })
     });
-
 }
-
 
 
 /* -------------------------------- */
@@ -202,9 +230,7 @@ export async function deleteCandidate(id) {
     return apiRequest(`/dashboard/candidate/${id}`, {
         method: "DELETE"
     });
-
 }
-
 
 
 /* -------------------------------- */
@@ -220,9 +246,7 @@ export async function loginUser(email, password) {
             password
         })
     });
-
 }
-
 
 
 export async function registerUser(name, email, password) {
@@ -235,21 +259,18 @@ export async function registerUser(name, email, password) {
             password
         })
     });
-
 }
 
 
-
-// --------------------------------------------------
-// Candidate Profile APIs
-// --------------------------------------------------
+/* -------------------------------- */
+/* Candidate Profile APIs */
+/* -------------------------------- */
 
 export const getCandidateProfile = async () => {
 
     return apiRequest("/candidate/profile", {
         method: "GET"
     });
-
 };
 
 
@@ -259,13 +280,12 @@ export const updateCandidateProfile = async (data) => {
         method: "PUT",
         body: JSON.stringify(data)
     });
-
 };
 
 
-// --------------------------------------------------
-// Candidate Dashboard API
-// --------------------------------------------------
+/* -------------------------------- */
+/* Candidate Dashboard API */
+/* -------------------------------- */
 
 export const getCandidateDashboard = async () => {
 

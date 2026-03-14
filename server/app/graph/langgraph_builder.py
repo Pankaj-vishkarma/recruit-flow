@@ -1,6 +1,7 @@
 import logging
 import asyncio
-from typing import Optional, Callable
+import threading
+from typing import Callable
 
 from langgraph.graph import StateGraph, END
 
@@ -16,57 +17,54 @@ from app.agents.onboarding_agent import onboarding_agent
 logger = logging.getLogger(__name__)
 
 # --------------------------------------------------
-# Global graph instance (singleton)
-# Prevents rebuilding graph on every request
+# Global graph instance (thread-safe singleton)
 # --------------------------------------------------
+
 _graph_instance = None
+_graph_lock = threading.Lock()
 
 
 # --------------------------------------------------
-# Safe node wrapper (crash protection)
-# Supports both sync and async nodes
+# Safe node wrapper (crash protection + timeout)
 # --------------------------------------------------
+
+
 def safe_node(node_name: str, func: Callable):
-    """
-    Wrap node execution to prevent system crashes
-    and support async agent functions.
-    """
 
     async def wrapper(state: AgentState):
 
         try:
 
-            logger.info(f"[LangGraph] Executing node: {node_name}")
+            logger.debug(f"[LangGraph] Running node: {node_name}")
 
             result = func(state)
 
-            # --------------------------------------------------
-            # If agent returned coroutine → await it
-            # --------------------------------------------------
+            # Await coroutine if needed
             if asyncio.iscoroutine(result):
-                result = await result
+                result = await asyncio.wait_for(result, timeout=20)
 
-            # --------------------------------------------------
-            # LangGraph requires dict-like state return
-            # --------------------------------------------------
+            # Ensure valid state
             if result is None:
-                result = state
+                return state
 
             if not isinstance(result, dict):
-                logger.warning(
-                    f"[LangGraph] Node {node_name} returned non-dict result. Using state fallback."
-                )
-                result = state
 
-            logger.info(f"[LangGraph] Completed node: {node_name}")
+                logger.warning(f"[LangGraph] Node {node_name} returned invalid result")
+
+                return state
 
             return result
 
+        except asyncio.TimeoutError:
+
+            logger.error(f"[LangGraph] Node timeout: {node_name}")
+
+            return state
+
         except Exception as e:
 
-            logger.exception(f"[LangGraph] Node failed: {node_name} | Error: {e}")
+            logger.exception(f"[LangGraph] Node failed: {node_name} | {e}")
 
-            # Return state unchanged to prevent workflow crash
             return state
 
     return wrapper
@@ -75,76 +73,74 @@ def safe_node(node_name: str, func: Callable):
 # --------------------------------------------------
 # Build LangGraph workflow
 # --------------------------------------------------
-def build_graph():
-    """
-    Build LangGraph workflow for Recruit-Flow HR system.
 
-    Pipeline:
-    Research → Screening → Technical Interview → Scheduling → Onboarding
-    """
+
+def build_graph():
 
     global _graph_instance
 
-    # Prevent rebuilding graph multiple times
     if _graph_instance is not None:
-        logger.info("Returning existing LangGraph instance")
         return _graph_instance
 
-    try:
+    with _graph_lock:
 
-        logger.info("Initializing LangGraph workflow...")
+        if _graph_instance is not None:
+            return _graph_instance
 
-        workflow = StateGraph(AgentState)
+        try:
 
-        # -----------------------------
-        # Register nodes with safety wrapper
-        # -----------------------------
+            logger.info("Initializing LangGraph workflow...")
 
-        workflow.add_node("research", safe_node("research", research_agent))
+            workflow = StateGraph(AgentState)
 
-        workflow.add_node("screen", safe_node("screen", screener_agent))
+            # --------------------------------------------------
+            # Register nodes
+            # --------------------------------------------------
 
-        workflow.add_node("tech", safe_node("tech", tech_interviewer))
+            workflow.add_node("research", safe_node("research", research_agent))
 
-        workflow.add_node("schedule", safe_node("schedule", scheduler_agent))
+            workflow.add_node("screen", safe_node("screen", screener_agent))
 
-        workflow.add_node("onboard", safe_node("onboard", onboarding_agent))
+            workflow.add_node("tech", safe_node("tech", tech_interviewer))
 
-        # -----------------------------
-        # Entry point
-        # -----------------------------
+            workflow.add_node("schedule", safe_node("schedule", scheduler_agent))
 
-        workflow.set_entry_point("research")
+            workflow.add_node("onboard", safe_node("onboard", onboarding_agent))
 
-        # -----------------------------
-        # Workflow edges
-        # -----------------------------
+            # --------------------------------------------------
+            # Entry point
+            # --------------------------------------------------
 
-        workflow.add_edge("research", "screen")
+            workflow.set_entry_point("research")
 
-        workflow.add_edge("screen", "tech")
+            # --------------------------------------------------
+            # Workflow edges
+            # --------------------------------------------------
 
-        workflow.add_edge("tech", "schedule")
+            workflow.add_edge("research", "screen")
 
-        workflow.add_edge("schedule", "onboard")
+            workflow.add_edge("screen", "tech")
 
-        workflow.add_edge("onboard", END)
+            workflow.add_edge("tech", "schedule")
 
-        # -----------------------------
-        # Compile graph
-        # -----------------------------
+            workflow.add_edge("schedule", "onboard")
 
-        graph = workflow.compile()
+            workflow.add_edge("onboard", END)
 
-        logger.info("LangGraph workflow compiled successfully")
+            # --------------------------------------------------
+            # Compile workflow
+            # --------------------------------------------------
 
-        # Cache instance
-        _graph_instance = graph
+            graph = workflow.compile()
 
-        return graph
+            _graph_instance = graph
 
-    except Exception as e:
+            logger.info("LangGraph workflow compiled successfully")
 
-        logger.exception(f"Failed to build LangGraph workflow: {e}")
+            return graph
 
-        raise RuntimeError("LangGraph initialization failed")
+        except Exception as e:
+
+            logger.exception(f"LangGraph build failed: {e}")
+
+            raise RuntimeError("LangGraph initialization failed")

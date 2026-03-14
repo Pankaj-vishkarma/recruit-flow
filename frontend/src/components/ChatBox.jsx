@@ -18,9 +18,16 @@ export default function ChatBox() {
     /* Load chat history */
 
     useEffect(() => {
-        const saved = localStorage.getItem("chat_history");
-        if (saved) {
-            setMessages(JSON.parse(saved));
+        try {
+            const saved = localStorage.getItem("chat_history");
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    setMessages(parsed);
+                }
+            }
+        } catch {
+            localStorage.removeItem("chat_history");
         }
     }, []);
 
@@ -48,6 +55,51 @@ export default function ChatBox() {
 
     }, [input]);
 
+
+
+    /* ----------------------------- */
+    /* FORMAT AI RESPONSE */
+    /* ----------------------------- */
+
+    function formatAIResponse(data) {
+
+        if (!data) return "No response from system";
+
+        if (typeof data === "string") return data;
+
+        if (typeof data === "object") {
+
+            let text = "";
+
+            if (data.message) {
+                text += data.message + "\n\n";
+            }
+
+            if (data.messages && Array.isArray(data.messages)) {
+
+                const last = data.messages[data.messages.length - 1];
+
+                if (last?.content) {
+                    text += last.content + "\n\n";
+                }
+            }
+
+            if (data.scheduled_time) {
+                text += `Interview Scheduled: ${data.scheduled_time}\n`;
+            }
+
+            if (data.current_step) {
+                text += `Current Step: ${data.current_step}\n`;
+            }
+
+            return text.trim();
+        }
+
+        return JSON.stringify(data, null, 2);
+    }
+
+
+
     /* Send Message */
 
     const handleSend = async () => {
@@ -73,19 +125,7 @@ export default function ChatBox() {
 
             const res = await sendMessage(messageToSend);
 
-            let responseText = "";
-
-            if (typeof res?.data === "object") {
-
-                responseText = Object.entries(res.data)
-                    .map(([key, value]) => `${key}: ${value}`)
-                    .join("\n");
-
-            } else {
-
-                responseText = res?.data || res?.message || "No response from system";
-
-            }
+            const responseText = res?.reply || "No response from AI";
 
             const botMessage = {
                 role: "assistant",
@@ -107,6 +147,8 @@ export default function ChatBox() {
         }
     };
 
+
+
     /* Enter key */
 
     const handleKeyPress = (e) => {
@@ -117,6 +159,8 @@ export default function ChatBox() {
         }
 
     };
+
+
 
     return (
 
@@ -131,6 +175,7 @@ export default function ChatBox() {
                 RecruitFlow AI Assistant
 
             </div>
+
 
 
             {/* Messages */}
@@ -172,6 +217,7 @@ export default function ChatBox() {
             </div>
 
 
+
             {/* Error */}
 
             {error && (
@@ -179,6 +225,7 @@ export default function ChatBox() {
                     {error}
                 </div>
             )}
+
 
 
             {/* Input */}
