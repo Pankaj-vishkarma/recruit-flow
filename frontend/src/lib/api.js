@@ -263,6 +263,26 @@ export async function registerUser(name, email, password) {
 
 
 /* -------------------------------- */
+/* GOOGLE LOGIN */
+/* -------------------------------- */
+
+export async function googleLogin(token) {
+
+    if (!token) {
+        return { status: "error", message: "Google token required" };
+    }
+
+    return apiRequest("/auth/google", {
+        method: "POST",
+        body: JSON.stringify({
+            token
+        })
+    });
+
+}
+
+
+/* -------------------------------- */
 /* Candidate Profile APIs */
 /* -------------------------------- */
 

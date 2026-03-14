@@ -1,4 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status
+from google.oauth2 import id_token
+from google.auth.transport import requests
+import os
 
 from app.models.user_model import UserRegister, UserLogin
 from app.services.auth_service import create_user, get_user, verify_password
@@ -6,6 +9,7 @@ from app.services.auth_service import create_user, get_user, verify_password
 from app.utils.jwt_handler import create_access_token
 from app.utils.auth_dependency import get_current_user
 from app.utils.logger import get_logger
+
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -139,4 +143,80 @@ async def get_me(user=Depends(get_current_user)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve user info",
+        )
+
+
+# --------------------------------
+# Google Login
+# --------------------------------
+@router.post("/google")
+async def google_login(data: dict):
+
+    try:
+
+        token = data.get("token")
+
+        if not token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Google token required",
+            )
+
+        google_client_id = os.getenv("GOOGLE_CLIENT_ID")
+
+        if not google_client_id:
+            raise HTTPException(
+                status_code=500,
+                detail="Google OAuth not configured",
+            )
+
+        idinfo = id_token.verify_oauth2_token(
+            token, requests.Request(), google_client_id
+        )
+
+        if not idinfo.get("email_verified"):
+            raise HTTPException(
+                status_code=400,
+                detail="Google email not verified",
+            )
+
+        email = idinfo.get("email")
+        name = idinfo.get("name")
+
+        user = get_user(email)
+
+        if not user:
+
+            user = create_user(
+                name=name,
+                email=email,
+                password=os.urandom(16).hex(),
+                role="candidate",
+            )
+
+        token = create_access_token(
+            {
+                "email": email,
+                "role": user["role"],
+            }
+        )
+
+        logger.info(f"Google login successful: {email}")
+
+        return {
+            "status": "success",
+            "token": token,
+            "user": {
+                "email": email,
+                "role": user["role"],
+            },
+        }
+
+    except Exception as e:
+
+        logger.exception(f"Google login failed: {e}")
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Google login failed",
         )

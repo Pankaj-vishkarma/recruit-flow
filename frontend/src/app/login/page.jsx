@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { loginUser } from "@/lib/api";
+import { loginUser, googleLogin } from "@/lib/api";
 import { saveToken } from "@/lib/auth";
 import { motion } from "framer-motion";
 import GalaxyBackground from "@/components/GalaxyBackground";
 import { Eye, EyeOff, Briefcase } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function LoginPage() {
 
@@ -21,6 +22,8 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [remember, setRemember] = useState(false);
     const [showModal, setShowModal] = useState(false);
+
+    /* EMAIL LOGIN */
 
     async function handleLogin(e) {
 
@@ -48,9 +51,9 @@ export default function LoginPage() {
             const role = res.user?.role;
 
             if (role === "hr") {
-                router.push("/dashboard");
+                router.replace("/dashboard");
             } else {
-                router.push("/candidate/dashboard");
+                router.replace("/candidate/dashboard");
             }
 
         } catch (err) {
@@ -63,6 +66,43 @@ export default function LoginPage() {
             setLoading(false);
 
         }
+    }
+
+    /* GOOGLE LOGIN */
+
+    async function handleGoogleLogin(credentialResponse) {
+
+        try {
+
+            if (!credentialResponse?.credential) {
+                setError("Google authentication failed");
+                return;
+            }
+
+            const res = await googleLogin(credentialResponse.credential);
+
+            if (res.status === "error") {
+                setError(res.message || "Google login failed");
+                return;
+            }
+
+            saveToken(res.token);
+
+            const role = res.user?.role;
+
+            if (role === "hr") {
+                router.replace("/dashboard");
+            } else {
+                router.replace("/candidate/dashboard");
+            }
+
+        } catch (err) {
+
+            console.error(err);
+            setError("Google login failed");
+
+        }
+
     }
 
     return (
@@ -115,7 +155,11 @@ export default function LoginPage() {
                         type="email"
                         placeholder="Email address"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        onChange={(e) => {
+                            setEmail(e.target.value);
+                            setError("");
+                        }}
                         className="w-full 
                         bg-white/[0.04]
                         border border-white/10
@@ -139,7 +183,12 @@ export default function LoginPage() {
                             type={showPassword ? "text" : "password"}
                             placeholder="Password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            minLength={6}
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                                setError("");
+                            }}
                             className="w-full 
                             bg-white/[0.04]
                             border border-white/10
@@ -161,33 +210,6 @@ export default function LoginPage() {
                             className="absolute right-3 top-2.5 text-gray-500 hover:text-indigo-400 transition"
                         >
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                        </button>
-
-                    </div>
-
-                    {/* Remember + Forgot */}
-
-                    <div className="flex items-center justify-between text-xs text-gray-400">
-
-                        <label className="flex items-center gap-2 cursor-pointer">
-
-                            <input
-                                type="checkbox"
-                                checked={remember}
-                                onChange={() => setRemember(!remember)}
-                                className="accent-indigo-500"
-                            />
-
-                            Remember me
-
-                        </label>
-
-                        <button
-                            type="button"
-                            onClick={() => setShowModal(true)}
-                            className="hover:text-indigo-400 transition"
-                        >
-                            Forgot password?
                         </button>
 
                     </div>
@@ -229,33 +251,14 @@ export default function LoginPage() {
 
                 <div className="space-y-3">
 
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="w-full
-                        bg-white/[0.04]
-                        border border-white/10
-                        hover:border-indigo-500
-                        hover:bg-white/[0.06]
-                        py-2.5 rounded-lg
-                        text-sm
-                        transition-all"
-                    >
-                        Continue with Google
-                    </button>
-
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="w-full
-                        bg-white/[0.04]
-                        border border-white/10
-                        hover:border-indigo-500
-                        hover:bg-white/[0.06]
-                        py-2.5 rounded-lg
-                        text-sm
-                        transition-all"
-                    >
-                        Continue with GitHub
-                    </button>
+                    <GoogleLogin
+                        onSuccess={handleGoogleLogin}
+                        onError={() => setError("Google login failed")}
+                        theme="outline"
+                        size="large"
+                        text="continue_with"
+                        shape="rectangular"
+                    />
 
                 </div>
 
@@ -316,5 +319,6 @@ export default function LoginPage() {
             )}
 
         </div>
+
     );
 }

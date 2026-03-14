@@ -1,5 +1,6 @@
 import "./globals.css";
 import { Inter } from "next/font/google";
+import GoogleProvider from "@/components/GoogleProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,7 +26,10 @@ export default function RootLayout({ children }) {
         antialiased
       "
       >
-        {children}
+        {/* Google OAuth Provider */}
+        <GoogleProvider>
+          {children}
+        </GoogleProvider>
       </body>
     </html>
   );

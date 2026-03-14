@@ -32,6 +32,11 @@ export default function RegisterPage() {
             return;
         }
 
+        if (password.length < 6) {
+            setError("Password must be at least 6 characters");
+            return;
+        }
+
         try {
 
             setLoading(true);
@@ -48,7 +53,7 @@ export default function RegisterPage() {
             setSuccess("Account created successfully");
 
             setTimeout(() => {
-                router.push("/login");
+                router.replace("/login");
             }, 1500);
 
         } catch (err) {
@@ -116,9 +121,14 @@ export default function RegisterPage() {
                     {/* Name */}
 
                     <input
+                        type="text"
                         placeholder="Full name"
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        required
+                        onChange={(e) => {
+                            setName(e.target.value);
+                            setError("");
+                        }}
                         className="w-full 
                         bg-white/[0.04]
                         border border-white/10
@@ -140,7 +150,11 @@ export default function RegisterPage() {
                         type="email"
                         placeholder="Email address"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        onChange={(e) => {
+                            setEmail(e.target.value);
+                            setError("");
+                        }}
                         className="w-full 
                         bg-white/[0.04]
                         border border-white/10
@@ -164,7 +178,12 @@ export default function RegisterPage() {
                             type={showPassword ? "text" : "password"}
                             placeholder="Password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            minLength={6}
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                                setError("");
+                            }}
                             className="w-full 
                             bg-white/[0.04]
                             border border-white/10
@@ -208,54 +227,6 @@ export default function RegisterPage() {
                     </button>
 
                 </form>
-
-                {/* Divider */}
-
-                <div className="flex items-center gap-3 my-5">
-
-                    <div className="flex-1 h-px bg-white/10"></div>
-
-                    <span className="text-xs text-gray-400">
-                        OR
-                    </span>
-
-                    <div className="flex-1 h-px bg-white/10"></div>
-
-                </div>
-
-                {/* Social Buttons */}
-
-                <div className="space-y-3">
-
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="w-full
-                        bg-white/[0.04]
-                        border border-white/10
-                        hover:border-indigo-500
-                        hover:bg-white/[0.06]
-                        py-2.5 rounded-lg
-                        text-sm
-                        transition-all"
-                    >
-                        Continue with Google
-                    </button>
-
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="w-full
-                        bg-white/[0.04]
-                        border border-white/10
-                        hover:border-indigo-500
-                        hover:bg-white/[0.06]
-                        py-2.5 rounded-lg
-                        text-sm
-                        transition-all"
-                    >
-                        Continue with GitHub
-                    </button>
-
-                </div>
 
                 {/* Login Link */}
 
