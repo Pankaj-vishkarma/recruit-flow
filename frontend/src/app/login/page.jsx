@@ -48,6 +48,12 @@ export default function LoginPage() {
 
             saveToken(res.token);
 
+            const userEmail = res?.user?.email || res?.data?.email || email;
+
+            if (userEmail) {
+                localStorage.setItem("user_email", userEmail);
+            }
+
             const role = res.user?.role;
 
             if (role === "hr") {
@@ -87,6 +93,12 @@ export default function LoginPage() {
             }
 
             saveToken(res.token);
+
+            const userEmail = res?.user?.email || res?.data?.email;
+
+            if (userEmail) {
+                localStorage.setItem("user_email", userEmail);
+            }
 
             const role = res.user?.role;
 

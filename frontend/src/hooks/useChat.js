@@ -7,6 +7,11 @@ export default function useChat() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    const getChatKey = () => {
+        const email = localStorage.getItem("user_email");
+        return email ? `chat_history_${email}` : "chat_history_guest";
+    };
+
 
     /* -------------------------------- */
     /* Load chat history */
@@ -14,7 +19,8 @@ export default function useChat() {
     useEffect(() => {
         if (typeof window === "undefined") return;
 
-        const saved = localStorage.getItem("chat_history");
+        const key = getChatKey();
+        const saved = localStorage.getItem(key);
 
         if (saved) {
             try {
@@ -32,7 +38,8 @@ export default function useChat() {
     useEffect(() => {
         if (typeof window === "undefined") return;
 
-        localStorage.setItem("chat_history", JSON.stringify(messages));
+        const key = getChatKey();
+        localStorage.setItem(key, JSON.stringify(messages));
     }, [messages]);
 
 
@@ -114,7 +121,8 @@ export default function useChat() {
         setError(null);
 
         if (typeof window !== "undefined") {
-            localStorage.removeItem("chat_history");
+            const key = getChatKey();
+            localStorage.removeItem(key);
         }
     };
 
