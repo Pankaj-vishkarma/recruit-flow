@@ -206,14 +206,14 @@ async def get_candidate_dashboard(user=Depends(get_current_candidate_user)):
                 detail="User not found",
             )
 
-        candidate_record = candidates_collection.find_one({"email": email})
+        candidate_record = candidates_collection.find_one({"name": email})
 
         dashboard_data = {
             "name": user_record.get("name"),
             "email": email,
             "skills": user_record.get("skills", []),
             "experience": user_record.get("experience"),
-            "status": "applied",
+            "status": user_record.get("status", "applied"),
             "interview_score": None,
             "scheduled_time": None,
         }
@@ -374,6 +374,9 @@ async def update_candidate_status(candidate_id: str, data: dict):
                 detail="Status is required",
             )
 
+        # -----------------------------------
+        # ✅ Update in candidates_collection
+        # -----------------------------------
         result = candidates_collection.update_one(
             {"_id": ObjectId(candidate_id)},
             {
@@ -390,10 +393,33 @@ async def update_candidate_status(candidate_id: str, data: dict):
                 detail="Candidate not found",
             )
 
+        # -----------------------------------
+        # 🔥 NEW FIX: Sync with users_collection
+        # -----------------------------------
+        candidate = candidates_collection.find_one({"_id": ObjectId(candidate_id)})
+
+        if candidate and "email" in candidate:
+
+            users_collection.update_one(
+                {"email": candidate["email"]},
+                {
+                    "$set": {
+                        "status": status_value,
+                        "updated_at": datetime.utcnow(),
+                    }
+                },
+            )
+
+        # -----------------------------------
+        # ✅ RESPONSE
+        # -----------------------------------
         return {
             "success": True,
             "message": f"Status updated to {status_value}",
         }
+
+    except HTTPException as http_error:
+        raise http_error
 
     except Exception as e:
 

@@ -1,8 +1,44 @@
 "use client";
 
 import { CheckCircle, Briefcase } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getCandidateDashboard } from "@/lib/api";
 
 export default function CandidateStatusPage() {
+
+    const [status, setStatus] = useState("applied");
+
+    useEffect(() => {
+        async function fetchStatus() {
+            const res = await getCandidateDashboard();
+
+            if (res?.data) {
+                const dbStatus = res.data.status || "applied";
+                setStatus(mapStatus(dbStatus));
+            }
+        }
+
+        fetchStatus();
+    }, []);
+
+    // 🔥 STATUS MAPPING
+    function mapStatus(dbStatus) {
+        if (dbStatus === "shortlisted") return "technical";
+        if (dbStatus === "rejected") return "rejected";
+        return dbStatus;
+    }
+
+    // 🔥 STEP CONFIG
+    const steps = [
+        { key: "applied", label: "Applied" },
+        { key: "screening", label: "Screening" },
+        { key: "technical", label: "Technical Interview" },
+        { key: "final", label: "Final Interview" },
+        { key: "selected", label: "Selected" },
+        { key: "rejected", label: "Rejected" }
+    ];
+
+    const currentIndex = steps.findIndex(s => s.key === status);
 
     return (
 
@@ -41,15 +77,22 @@ export default function CandidateStatusPage() {
 
                 <div className="flex flex-wrap gap-3">
 
-                    <StatusBadge label="Applied" active />
+                    {steps.map((step, index) => {
 
-                    <StatusBadge label="Screening" />
+                        const isActive =
+                            status === "rejected"
+                                ? step.key === "rejected"
+                                : index <= currentIndex;
 
-                    <StatusBadge label="Technical Interview" />
-
-                    <StatusBadge label="Final Interview" />
-
-                    <StatusBadge label="Selected" />
+                        return (
+                            <StatusBadge
+                                key={step.key}
+                                label={step.label}
+                                active={isActive}
+                                status={status} // 🔥 ADDED
+                            />
+                        );
+                    })}
 
                 </div>
 
@@ -61,14 +104,18 @@ export default function CandidateStatusPage() {
 }
 
 
-function StatusBadge({ label, active }) {
+function StatusBadge({ label, active, status }) {
+
+    const isRejected = status === "rejected" && label === "Rejected";
 
     return (
 
         <div
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition
             ${active
-                    ? "bg-green-500 text-white"
+                    ? isRejected
+                        ? "bg-red-500 text-white"     // 🔥 RED
+                        : "bg-green-500 text-white"  // ✅ GREEN
                     : "bg-gray-800 text-gray-300"
                 }`}
         >

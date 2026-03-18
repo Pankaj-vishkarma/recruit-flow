@@ -4,8 +4,9 @@ from typing import Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, Path
 from bson import ObjectId
 
-from app.config.database import candidates_collection
+from app.config.database import candidates_collection, users_collection  # ✅ FIX
 from app.utils.auth_dependency import get_current_hr_user
+from datetime import datetime  # ✅ FIX
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -25,10 +26,6 @@ async def get_dashboard_stats(
 
     try:
 
-        # ---------------------------------------------------------
-        # STEP 9 PERFORMANCE OPTIMIZATION
-        # Use MongoDB aggregation for single-query stats
-        # ---------------------------------------------------------
         pipeline = [
             {
                 "$group": {
@@ -188,6 +185,12 @@ async def update_candidate_status(
                 detail="No fields provided for update",
             )
 
+        # ✅ ADD timestamp (important)
+        update_fields["updated_at"] = datetime.utcnow()
+
+        # -----------------------------------
+        # Update candidates_collection
+        # -----------------------------------
         result = candidates_collection.update_one(
             {"_id": ObjectId(candidate_id)},
             {"$set": update_fields},
@@ -197,6 +200,18 @@ async def update_candidate_status(
             raise HTTPException(
                 status_code=404,
                 detail="Candidate not found",
+            )
+
+        # -----------------------------------
+        # 🔥 Sync with users_collection (FINAL FIX)
+        # -----------------------------------
+        candidate = candidates_collection.find_one({"_id": ObjectId(candidate_id)})
+
+        if candidate and "email" in candidate:
+
+            users_collection.update_one(
+                {"email": candidate["email"]},
+                {"$set": update_fields},
             )
 
         logger.info(f"Candidate updated by {user['email']}")

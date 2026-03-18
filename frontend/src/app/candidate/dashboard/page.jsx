@@ -22,8 +22,15 @@ export default function CandidateDashboard() {
         "screening",
         "technical",
         "interview",
-        "selected"
+        "selected",
+        "rejected"
     ];
+
+    function mapStatus(dbStatus) {
+        if (dbStatus === "shortlisted") return "technical";
+        if (dbStatus === "rejected") return "rejected";
+        return dbStatus;
+    }
 
     useEffect(() => {
 
@@ -49,7 +56,10 @@ export default function CandidateDashboard() {
                 throw new Error("Invalid dashboard response");
             }
 
-            setData(res.data);
+            setData({
+                ...res.data,
+                status: mapStatus(res.data.status)
+            });
 
         } catch (err) {
 
@@ -139,15 +149,20 @@ export default function CandidateDashboard() {
 
                     {stages.map((stage, index) => {
 
-                        const completed = index <= currentStageIndex;
+                        const completed =
+                            data?.status === "rejected"
+                                ? stage === "rejected"
+                                : index <= currentStageIndex;
 
                         return (
 
                             <div
                                 key={stage}
                                 className={`px-4 py-2 rounded-full text-sm font-medium capitalize transition
-                                ${completed
-                                        ? "bg-green-500 text-white shadow"
+${completed
+                                        ? data?.status === "rejected" && stage === "rejected"
+                                            ? "bg-red-500 text-white shadow"   // 🔥 RED FOR REJECTED
+                                            : "bg-green-500 text-white shadow"
                                         : "bg-gray-800 text-gray-400"
                                     }`}
                             >
