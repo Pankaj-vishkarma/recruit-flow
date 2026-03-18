@@ -2,8 +2,25 @@
 
 import CalendarGrid from "@/components/CalendarGrid";
 import { CalendarDays } from "lucide-react";
+import { scheduleInterview } from "@/lib/api";
 
 export default function CandidateInterviewPage() {
+
+    const handleSchedule = async (slot) => {
+        try {
+            const res = await scheduleInterview(slot);
+
+            if (!res.success) {
+                alert(res.message || "Failed to schedule interview");
+                return;
+            }
+
+            alert("Interview scheduled successfully!");
+        } catch (err) {
+            console.error(err);
+            alert("Something went wrong");
+        }
+    };
 
     return (
 
@@ -36,7 +53,7 @@ export default function CandidateInterviewPage() {
 
             <div className="flex-1 min-h-0">
 
-                <CalendarGrid />
+                <CalendarGrid onSchedule={handleSchedule} />
 
             </div>
 

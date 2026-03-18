@@ -16,16 +16,12 @@ from app.agents.onboarding_agent import onboarding_agent
 
 logger = logging.getLogger(__name__)
 
-# --------------------------------------------------
-# Global graph instance (thread-safe singleton)
-# --------------------------------------------------
-
 _graph_instance = None
 _graph_lock = threading.Lock()
 
 
 # --------------------------------------------------
-# Safe node wrapper (crash protection + timeout)
+# Safe node wrapper
 # --------------------------------------------------
 
 
@@ -34,44 +30,42 @@ def safe_node(node_name: str, func: Callable):
     async def wrapper(state: AgentState):
 
         try:
-
             logger.debug(f"[LangGraph] Running node: {node_name}")
 
             result = func(state)
 
-            # Await coroutine if needed
             if asyncio.iscoroutine(result):
                 result = await asyncio.wait_for(result, timeout=20)
 
-            # Ensure valid state
             if result is None:
-                return state
+                result = {}
 
             if not isinstance(result, dict):
-
                 logger.warning(f"[LangGraph] Node {node_name} returned invalid result")
+                result = {}
 
-                return state
+            merged_state = {**state, **result}
 
-            return result
+            # 🔥 FIX: append messages safely
+            prev_messages = state.get("messages", [])
+            new_messages = result.get("messages", [])
 
-        except asyncio.TimeoutError:
+            if new_messages and isinstance(new_messages, list):
+                merged_state["messages"] = prev_messages + new_messages
+            else:
+                merged_state["messages"] = prev_messages
 
-            logger.error(f"[LangGraph] Node timeout: {node_name}")
-
-            return state
+            return merged_state
 
         except Exception as e:
-
             logger.exception(f"[LangGraph] Node failed: {node_name} | {e}")
-
             return state
 
     return wrapper
 
 
 # --------------------------------------------------
-# Build LangGraph workflow
+# Build Graph
 # --------------------------------------------------
 
 
@@ -79,57 +73,126 @@ def build_graph():
 
     global _graph_instance
 
-    if _graph_instance is not None:
+    if _graph_instance:
         return _graph_instance
 
     with _graph_lock:
 
-        if _graph_instance is not None:
+        if _graph_instance:
             return _graph_instance
 
         try:
-
             logger.info("Initializing LangGraph workflow...")
 
             workflow = StateGraph(AgentState)
 
             # --------------------------------------------------
-            # Register nodes
+            # Nodes
             # --------------------------------------------------
 
-            workflow.add_node("research", safe_node("research", research_agent))
-
             workflow.add_node("screen", safe_node("screen", screener_agent))
-
             workflow.add_node("tech", safe_node("tech", tech_interviewer))
-
             workflow.add_node("schedule", safe_node("schedule", scheduler_agent))
-
             workflow.add_node("onboard", safe_node("onboard", onboarding_agent))
 
             # --------------------------------------------------
-            # Entry point
+            # 🔥 FINAL SMART ROUTER
             # --------------------------------------------------
 
-            workflow.set_entry_point("research")
+            def router_node(state: AgentState):
+
+                messages = state.get("messages", [])
+                last_msg = ""
+
+                if messages and isinstance(messages[-1], dict):
+                    last_msg = str(messages[-1].get("content", "")).lower()
+
+                step = state.get("current_step", "screen")
+
+                logger.info(f"[ROUTER] step: {step} | msg: {last_msg}")
+
+                # ----------------------------------------
+                # 🔥 INTENT PRIORITY
+                # ----------------------------------------
+
+                # schedule intent
+                if any(
+                    word in last_msg for word in ["schedule", "schedul", "book", "slot"]
+                ):
+                    state["current_step"] = "schedule"
+                    return {"next": "schedule"}
+
+                # onboarding intent (manual only)
+                if any(word in last_msg for word in ["onboard", "join", "start job"]):
+                    state["current_step"] = "onboard"
+                    return {"next": "onboard"}
+
+                # start interview
+                if "start" in last_msg and "interview" in last_msg:
+                    state["current_step"] = "tech"
+                    return {"next": "tech"}
+
+                # greeting (ONLY if no prior flow)
+                if any(word in last_msg for word in ["hi", "hello", "hey"]):
+                    return {"next": step}
+
+                # ----------------------------------------
+                # 🔥 STAGE BASED ROUTING
+                # ----------------------------------------
+
+                if step == "screen":
+                    return {"next": "screen"}
+
+                elif step == "tech":
+                    return {"next": "tech"}
+
+                elif step == "schedule":
+                    return {"next": "schedule"}
+
+                elif step == "onboard":
+                    return {"next": "onboard"}
+
+                return {"next": "screen"}
+
+            workflow.add_node("router", router_node)
 
             # --------------------------------------------------
-            # Workflow edges
+            # ENTRY
             # --------------------------------------------------
 
-            workflow.add_edge("research", "screen")
-
-            workflow.add_edge("screen", "tech")
-
-            workflow.add_edge("tech", "schedule")
-
-            workflow.add_edge("schedule", "onboard")
-
-            workflow.add_edge("onboard", END)
+            workflow.set_entry_point("router")
 
             # --------------------------------------------------
-            # Compile workflow
+            # ROUTES
             # --------------------------------------------------
+
+            def route_from_router(state):
+                return state.get("next", "screen")
+
+            def route_from_screen(state):
+                state["current_step"] = "tech"
+                return "tech"
+
+            def route_from_tech(state):
+                return END
+
+            # 🔥 FIXED: NO AUTO ONBOARDING
+            def route_from_schedule(state):
+                logger.info("[ROUTE] schedule → END")
+                return END
+
+            def route_from_onboard(state):
+                return END
+
+            # --------------------------------------------------
+            # EDGES
+            # --------------------------------------------------
+
+            workflow.add_conditional_edges("router", route_from_router)
+            workflow.add_conditional_edges("screen", route_from_screen)
+            workflow.add_conditional_edges("tech", route_from_tech)
+            workflow.add_conditional_edges("schedule", route_from_schedule)
+            workflow.add_conditional_edges("onboard", route_from_onboard)
 
             graph = workflow.compile()
 
@@ -140,7 +203,5 @@ def build_graph():
             return graph
 
         except Exception as e:
-
             logger.exception(f"LangGraph build failed: {e}")
-
             raise RuntimeError("LangGraph initialization failed")

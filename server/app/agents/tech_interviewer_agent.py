@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 from app.services.interview_service import generate_followup_question
 
@@ -7,57 +7,101 @@ logger = logging.getLogger(__name__)
 
 
 def tech_interviewer(state: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Technical Interview Agent
-
-    Responsibilities:
-    - Generate technical interview questions based on candidate skills
-    - Append question to conversation messages
-    - Maintain workflow state for next steps
-    """
-
     try:
-        # Ensure state structure exists
-        if "candidate_data" not in state:
-            state["candidate_data"] = {}
 
-        if "messages" not in state:
-            state["messages"] = []
+        messages = state.get("messages", [])
+        candidate_data = state.get("candidate_data", {})
+        skills = candidate_data.get("skills", [])
 
-        skills: List[str] = state["candidate_data"].get("skills", [])
+        last_message = messages[-1]["content"].lower()
+        asked_questions = state.get("interview_questions", [])
 
-        # Generate technical question
-        question = generate_followup_question(skills)
+        question = ""
 
-        # Fallback question if generation fails
-        if not question:
-            question = (
-                "Can you describe a challenging technical problem you solved recently?"
-            )
+        # --------------------------------
+        # 🔥 FIX 1: Handle short answers
+        # --------------------------------
+        if last_message in ["yes", "yeah", "ok", "okay"]:
+            question = "Can you explain your previous answer in more detail?"
 
-        # Log question
-        logger.info(f"Generated tech interview question based on skills {skills}")
+        # --------------------------------
+        # 🔥 FIX 2: Explicit skill request
+        # --------------------------------
+        elif "javascript" in last_message:
+            question = "Explain closures in JavaScript and give a real-world example."
 
-        # Append to conversation history
-        state["messages"].append(question)
+        elif "react" in last_message:
+            question = "Explain React hooks and their use cases."
 
-        # Track interview progress
-        state["current_step"] = "tech_interview"
+        elif "python" in last_message:
+            question = "Can you explain Python decorators?"
 
-        return state
+        # --------------------------------
+        # 🔥 FIX 3: Start interview intent
+        # --------------------------------
+        elif "start" in last_message and "interview" in last_message:
+
+            if "javascript" in skills:
+                question = (
+                    "What is the difference between var, let, and const in JavaScript?"
+                )
+
+            elif "python" in skills:
+                question = "Explain Python decorators."
+
+            elif "react" in skills:
+                question = "What are React hooks and why are they used?"
+
+            else:
+                question = (
+                    "Which technology would you like to start your interview with?"
+                )
+
+        # --------------------------------
+        # 🔥 FIX 4: Smart follow-up from skills
+        # --------------------------------
+        elif skills:
+            question = generate_followup_question(skills)
+
+        # --------------------------------
+        # 🔥 FIX 5: Default fallback
+        # --------------------------------
+        else:
+            question = "Which technologies are you most comfortable with?"
+
+        # --------------------------------
+        # 🔥 FIX 6: Prevent repetition
+        # --------------------------------
+        if question in asked_questions:
+            question = "Can you describe a real-world project where you used these technologies?"
+
+        # --------------------------------
+        # 🔥 FIX 7: Track questions properly
+        # --------------------------------
+        updated_questions = asked_questions + [question]
+
+        return {
+            **state,
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": question,
+                }
+            ],
+            "interview_questions": updated_questions,
+            "current_step": "tech",
+        }
 
     except Exception as e:
+
         logger.exception(f"Tech interviewer agent failed: {e}")
 
-        # Fail-safe fallback
-        fallback_question = (
-            "Can you explain your experience with your primary programming language?"
-        )
-
-        if "messages" not in state:
-            state["messages"] = []
-
-        state["messages"].append(fallback_question)
-        state["current_step"] = "tech_interview"
-
-        return state
+        return {
+            **state,
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": "Tell me about your technical experience.",
+                }
+            ],
+        }

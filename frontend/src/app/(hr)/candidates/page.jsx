@@ -17,6 +17,7 @@ export default function CandidatesPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const [actionLoading, setActionLoading] = useState(false);
 
 
@@ -35,6 +36,7 @@ export default function CandidatesPage() {
             }
 
             setCandidates(res?.data || []);
+            setTotalPages(res?.total_pages || 1);
 
         } catch (err) {
 
@@ -64,7 +66,7 @@ export default function CandidatesPage() {
 
         return () => controller.abort();
 
-    }, [page, router]);
+    }, [page]);
 
 
 
@@ -81,7 +83,7 @@ export default function CandidatesPage() {
                 return;
             }
 
-            fetchCandidates();
+            fetchCandidates(null, page);
 
         } catch (err) {
 
@@ -111,7 +113,7 @@ export default function CandidatesPage() {
                 return;
             }
 
-            fetchCandidates();
+            fetchCandidates(null, page);
 
         } catch (err) {
 
@@ -203,7 +205,7 @@ export default function CandidatesPage() {
                                 </td>
 
                                 <td className="px-4 py-3">
-                                    <StatusBadge status={candidate.status || "Pending"} />
+                                    <StatusBadge status={candidate.status || "pending"} />
                                 </td>
 
                                 <td className="px-4 py-3 text-gray-300">
@@ -320,7 +322,7 @@ export default function CandidatesPage() {
             <div className="flex items-center justify-center gap-4">
 
                 <button
-                    onClick={() => setPage(page - 1)}
+                    onClick={() => setPage(p => p - 1)}
                     disabled={page === 1 || loading}
                     className="px-4 py-2 rounded bg-indigo-600 text-white text-sm disabled:bg-gray-600"
                 >
@@ -328,12 +330,12 @@ export default function CandidatesPage() {
                 </button>
 
                 <span className="text-sm text-gray-300">
-                    Page {page}
+                    Page {page} of {totalPages}
                 </span>
 
                 <button
-                    onClick={() => setPage(page + 1)}
-                    disabled={loading}
+                    onClick={() => setPage(p => p + 1)}
+                    disabled={page >= totalPages}
                     className="px-4 py-2 rounded bg-indigo-600 text-white text-sm disabled:bg-gray-600"
                 >
                     Next

@@ -41,7 +41,7 @@ export default function CandidateDashboard() {
 
             const res = await getCandidateDashboard();
 
-            if (!res || res.status !== "success") {
+            if (!res || !res.success) {
                 throw new Error(res?.message || "Dashboard API failed");
             }
 
@@ -235,7 +235,7 @@ export default function CandidateDashboard() {
 
                             const data = await res.json();
 
-                            if (data.status === "success") {
+                            if (data.success) {
                                 alert("Resume uploaded successfully");
                                 window.location.reload();
                             }

@@ -1,7 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 if (!API_URL) {
-    console.error("NEXT_PUBLIC_API_URL is not defined in environment variables");
+    throw new Error("API URL missing. Check NEXT_PUBLIC_API_URL");
 }
 
 
@@ -39,13 +39,13 @@ async function apiRequest(endpoint, options = {}, retry = 1) {
             ...options,
 
             cache: "no-store",
+            next: { revalidate: 0 },
 
             headers: {
                 "Content-Type": "application/json",
-
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-
-                ...(options.headers || {})
+                "Accept": "application/json",
+                ...(options.headers || {}),
+                ...(token ? { Authorization: `Bearer ${token}` } : {})
             },
 
             signal: controller.signal
@@ -66,7 +66,7 @@ async function apiRequest(endpoint, options = {}, retry = 1) {
             }
 
             return {
-                status: "error",
+                success: false,
                 message: "Session expired"
             };
         }
@@ -91,17 +91,27 @@ async function apiRequest(endpoint, options = {}, retry = 1) {
 
             }
 
-            throw new Error(`API ${res.status}: ${errorMessage}`);
+            return {
+                success: false,
+                message: errorMessage
+            };
         }
 
 
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
 
-        return data;
+        return {
+            success: true,
+            data,
+            ...data
+        };
 
     } catch (error) {
 
-        console.error("API error:", error);
+        console.error("API ERROR:", {
+            endpoint,
+            message: error.message
+        });
 
         clearTimeout(timeout);
 
@@ -114,7 +124,7 @@ async function apiRequest(endpoint, options = {}, retry = 1) {
 
             console.log("Retrying API request...");
 
-            await new Promise(res => setTimeout(res, 2000));
+            await new Promise(res => setTimeout(res, 4000));
 
             return apiRequest(endpoint, options, retry - 1);
 
@@ -124,14 +134,14 @@ async function apiRequest(endpoint, options = {}, retry = 1) {
         if (error.name === "AbortError") {
 
             return {
-                status: "error",
-                message: "Server taking too long to respond"
+                success: false,
+                message: "Server is waking up, please try again..."
             };
 
         }
 
         return {
-            status: "error",
+            success: false,
             message: error.message || "Network error"
         };
     }
@@ -145,7 +155,7 @@ async function apiRequest(endpoint, options = {}, retry = 1) {
 export async function sendMessage(message, candidateName = "candidate") {
 
     if (!message) {
-        return { status: "error", message: "Message cannot be empty" };
+        return { success: false, message: "Message cannot be empty" };
     }
 
     return apiRequest("/chat/", {
@@ -165,10 +175,10 @@ export async function sendMessage(message, candidateName = "candidate") {
 export async function scheduleInterview(slot, candidateName = "candidate") {
 
     if (!slot) {
-        return { status: "error", message: "Slot is required" };
+        return { success: false, message: "Slot is required" };
     }
 
-    return apiRequest("/schedule/", {
+    return apiRequest("/schedule", {
         method: "POST",
         body: JSON.stringify({
             slot,
@@ -194,7 +204,7 @@ export async function getCandidateData(candidateName = "candidate") {
 
 export async function getCandidates(page = 1, limit = 10) {
 
-    return apiRequest(`/dashboard/candidates?page=${page}&limit=${limit}`);
+    return apiRequest(`/candidate/all?page=${page}&limit=${limit}`);
 }
 
 
@@ -205,10 +215,10 @@ export async function getCandidates(page = 1, limit = 10) {
 export async function updateCandidateStatus(id, status) {
 
     if (!id || !status) {
-        return { status: "error", message: "ID and status required" };
+        return { success: false, message: "ID and status required" };
     }
 
-    return apiRequest(`/dashboard/candidate/${id}`, {
+    return apiRequest(`/candidate/status/${id}`, {
         method: "PUT",
         body: JSON.stringify({
             status
@@ -224,7 +234,7 @@ export async function updateCandidateStatus(id, status) {
 export async function deleteCandidate(id) {
 
     if (!id) {
-        return { status: "error", message: "Candidate id required" };
+        return { success: false, message: "Candidate id required" };
     }
 
     return apiRequest(`/dashboard/candidate/${id}`, {
@@ -269,7 +279,7 @@ export async function registerUser(name, email, password) {
 export async function googleLogin(token) {
 
     if (!token) {
-        return { status: "error", message: "Google token required" };
+        return { success: false, message: "Google token required" };
     }
 
     return apiRequest("/auth/google", {
@@ -313,7 +323,7 @@ export const getCandidateDashboard = async () => {
         method: "GET"
     });
 
-    if (!res || res.status === "error") {
+    if (!res || res.success === false) {
         return { data: null };
     }
 

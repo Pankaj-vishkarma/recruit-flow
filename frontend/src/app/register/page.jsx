@@ -27,8 +27,21 @@ export default function RegisterPage() {
 
         e.preventDefault();
 
-        if (!name || !email || !password) {
+        if (!name.trim() || !email || !password) {
             setError("All fields are required");
+            return;
+        }
+
+        // Name validation
+        const nameRegex = /^[A-Za-z ]+$/;
+
+        if (!nameRegex.test(name.trim())) {
+            setError("Name should contain only alphabets");
+            return;
+        }
+
+        if (name.trim().length < 3) {
+            setError("Name must be at least 3 characters");
             return;
         }
 
@@ -126,7 +139,7 @@ export default function RegisterPage() {
                         value={name}
                         required
                         onChange={(e) => {
-                            setName(e.target.value);
+                            setName(e.target.value.replace(/\s+/g, " "));
                             setError("");
                         }}
                         className="w-full 

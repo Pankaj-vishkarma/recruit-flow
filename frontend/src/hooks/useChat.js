@@ -8,43 +8,37 @@ export default function useChat() {
     const [error, setError] = useState(null);
 
 
-
     /* -------------------------------- */
     /* Load chat history */
     /* -------------------------------- */
-
     useEffect(() => {
-
         if (typeof window === "undefined") return;
 
         const saved = localStorage.getItem("chat_history");
 
         if (saved) {
-            setMessages(JSON.parse(saved));
+            try {
+                setMessages(JSON.parse(saved));
+            } catch {
+                setMessages([]);
+            }
         }
-
     }, []);
-
 
 
     /* -------------------------------- */
     /* Save chat history */
     /* -------------------------------- */
-
     useEffect(() => {
-
         if (typeof window === "undefined") return;
 
         localStorage.setItem("chat_history", JSON.stringify(messages));
-
     }, [messages]);
-
 
 
     /* -------------------------------- */
     /* Send message */
     /* -------------------------------- */
-
     const send = async (text) => {
 
         if (!text || loading) return;
@@ -57,18 +51,31 @@ export default function useChat() {
             time: new Date().toLocaleTimeString()
         };
 
-        setMessages(prev => [...prev, userMsg]);
+        // ✅ Step 1: Update messages
+        const updatedMessages = [...messages, userMsg];
+        setMessages(updatedMessages);
+
 
         setLoading(true);
 
         try {
 
+            // ✅ Step 3: Send formatted history
             const res = await sendMessage(text);
 
-            const reply =
-                res?.data
-                    ? JSON.stringify(res.data, null, 2)
-                    : res?.message || "No response received.";
+            console.log("API RESPONSE FULL:", res);
+
+            let reply = "No response received.";
+
+            if (res?.status === "success" || res?.success) {
+                reply =
+                    res?.reply ||                 // 🔥 main backend field
+                    res?.data?.reply ||
+                    res?.message ||
+                    "No response from AI";
+            } else {
+                reply = res?.message || "Server error";
+            }
 
             const botMsg = {
                 role: "assistant",
@@ -94,17 +101,13 @@ export default function useChat() {
             ]);
 
         } finally {
-
             setLoading(false);
         }
     };
 
-
-
     /* -------------------------------- */
     /* Reset chat */
     /* -------------------------------- */
-
     const resetChat = () => {
 
         setMessages([]);
@@ -114,7 +117,6 @@ export default function useChat() {
             localStorage.removeItem("chat_history");
         }
     };
-
 
 
     return {

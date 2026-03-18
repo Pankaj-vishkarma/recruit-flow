@@ -48,13 +48,16 @@ export default function CalendarGrid() {
                 "candidate"
             );
 
-            if (res?.status === "success") {
+            console.log("API RESPONSE:", res);
+
+            // ✅ FIXED CONDITION
+            if (res?.success) {
 
                 setConfirmed(true);
 
             } else {
 
-                throw new Error(res?.message || "Scheduling failed");
+                throw new Error(res?.message || "Failed to schedule interview");
             }
 
         } catch (err) {

@@ -11,12 +11,6 @@ logger = logging.getLogger(__name__)
 def research_agent(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Research Agent
-
-    Responsibilities:
-    - Perform web search based on candidate query
-    - Fetch content from search results
-    - Summarize retrieved information
-    - Store research result in workflow state
     """
 
     try:
@@ -24,7 +18,7 @@ def research_agent(state: Dict[str, Any]) -> Dict[str, Any]:
         # -----------------------------
         # Validate state
         # -----------------------------
-        messages: List[str] = state.get("messages", [])
+        messages: List[Dict[str, Any]] = state.get("messages", [])
 
         if not isinstance(messages, list) or len(messages) == 0:
 
@@ -33,7 +27,13 @@ def research_agent(state: Dict[str, Any]) -> Dict[str, Any]:
             state["research_result"] = "No input provided for research."
             return state
 
-        query = str(messages[-1]).strip()
+        # 🔥 FIX: Proper query extraction
+        last_msg = messages[-1]
+
+        if isinstance(last_msg, dict):
+            query = str(last_msg.get("content", "")).strip()
+        else:
+            query = str(last_msg).strip()
 
         if not query:
 
@@ -62,13 +62,21 @@ def research_agent(state: Dict[str, Any]) -> Dict[str, Any]:
             logger.warning("No search results found")
 
             state["research_result"] = "No relevant information found."
+
+            # 🔥 FIX: immutable update
+            state["messages"] = messages + [
+                {
+                    "role": "assistant",
+                    "content": "I couldn't find relevant information for your query.",
+                }
+            ]
+
             return state
 
         logger.info(f"Search returned {len(links)} links")
 
         # -----------------------------
         # Step 2: Fetch content
-        # Try multiple links if needed
         # -----------------------------
         content = None
 
@@ -76,35 +84,37 @@ def research_agent(state: Dict[str, Any]) -> Dict[str, Any]:
 
             try:
 
-                logger.info(f"Attempting to fetch content from: {link}")
+                logger.info(f"Fetching: {link}")
 
                 fetched = web_fetch(link)
 
                 if fetched and len(fetched) > 50:
 
                     content = fetched
-
-                    logger.info(f"Content fetched successfully from: {link}")
-
                     break
-
-                else:
-
-                    logger.warning(f"Content from {link} was empty or too short")
 
             except Exception as fetch_error:
 
-                logger.warning(f"Failed fetching {link}: {fetch_error}")
+                logger.warning(f"Fetch failed: {fetch_error}")
 
         if not content:
 
             logger.warning("All fetch attempts failed")
 
             state["research_result"] = "Unable to retrieve content."
+
+            # 🔥 FIX: immutable update
+            state["messages"] = messages + [
+                {
+                    "role": "assistant",
+                    "content": "I couldn't fetch useful data from the web.",
+                }
+            ]
+
             return state
 
         # -----------------------------
-        # Step 3: Summarize content
+        # Step 3: Summarize
         # -----------------------------
         try:
 
@@ -113,17 +123,19 @@ def research_agent(state: Dict[str, Any]) -> Dict[str, Any]:
         except Exception as summarize_error:
 
             logger.error(f"Summarization failed: {summarize_error}")
-
             summary = None
 
-        if not summary or len(summary.strip()) == 0:
+        if not summary or not str(summary).strip():
 
-            summary = "Research completed but no summary generated."
+            summary = f"I found some relevant information about: {query}"
 
         # -----------------------------
-        # Store result in state
+        # Store result
         # -----------------------------
         state["research_result"] = summary
+
+        # 🔥🔥 CRITICAL FIX: immutable update
+        state["messages"] = messages + [{"role": "assistant", "content": summary}]
 
         logger.info("Research step completed successfully")
 
@@ -133,8 +145,14 @@ def research_agent(state: Dict[str, Any]) -> Dict[str, Any]:
 
         logger.exception(f"Research agent failed: {e}")
 
-        # Fail-safe response so workflow continues
         state["research_error"] = str(e)
         state["research_result"] = "Research step failed."
+
+        # 🔥 FIX: immutable update
+        messages = state.get("messages", [])
+
+        state["messages"] = messages + [
+            {"role": "assistant", "content": "Something went wrong during research."}
+        ]
 
         return state

@@ -10,6 +10,10 @@ from app.utils.jwt_handler import create_access_token
 from app.utils.auth_dependency import get_current_user
 from app.utils.logger import get_logger
 
+# ✅ NEW IMPORT
+from app.config.database import candidates_collection
+from datetime import datetime
+
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -17,13 +21,12 @@ logger = get_logger()
 
 
 # --------------------------------
-# Register (Candidate / HR)
+# Register
 # --------------------------------
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(data: UserRegister):
 
     try:
-
         role = data.role if data.role else "candidate"
 
         if role not in ["candidate", "hr"]:
@@ -56,7 +59,6 @@ async def register(data: UserRegister):
         raise http_error
 
     except Exception as e:
-
         logger.exception(f"Register failed: {e}")
 
         raise HTTPException(
@@ -72,7 +74,6 @@ async def register(data: UserRegister):
 async def login(data: UserLogin):
 
     try:
-
         email = data.email.lower()
 
         user = get_user(email)
@@ -111,7 +112,6 @@ async def login(data: UserLogin):
         raise http_error
 
     except Exception as e:
-
         logger.exception(f"Login failed: {e}")
 
         raise HTTPException(
@@ -127,7 +127,6 @@ async def login(data: UserLogin):
 async def get_me(user=Depends(get_current_user)):
 
     try:
-
         return {
             "status": "success",
             "data": {
@@ -137,7 +136,6 @@ async def get_me(user=Depends(get_current_user)):
         }
 
     except Exception as e:
-
         logger.exception(f"/auth/me failed: {e}")
 
         raise HTTPException(
@@ -147,13 +145,12 @@ async def get_me(user=Depends(get_current_user)):
 
 
 # --------------------------------
-# Google Login
+# Google Login (FINAL FIXED)
 # --------------------------------
 @router.post("/google")
 async def google_login(data: dict):
 
     try:
-
         token = data.get("token")
 
         if not token:
@@ -180,11 +177,18 @@ async def google_login(data: dict):
                 detail="Google email not verified",
             )
 
-        email = idinfo.get("email")
-        name = idinfo.get("name")
+        # ✅ Normalize
+        email = idinfo.get("email").lower()
+        name = idinfo.get("name") or email
 
+        # --------------------------------
+        # Check user
+        # --------------------------------
         user = get_user(email)
 
+        # --------------------------------
+        # Create user if not exists
+        # --------------------------------
         if not user:
 
             user = create_user(
@@ -194,6 +198,31 @@ async def google_login(data: dict):
                 role="candidate",
             )
 
+            if not user:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Failed to create user via Google login",
+                )
+
+        # --------------------------------
+        # ✅ CREATE CANDIDATE (SAFE)
+        # --------------------------------
+        existing_candidate = candidates_collection.find_one({"email": email})
+
+        if not existing_candidate:
+            candidates_collection.insert_one(
+                {
+                    "email": email,
+                    "name": name,
+                    "role": "candidate",
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow(),
+                }
+            )
+
+        # --------------------------------
+        # JWT
+        # --------------------------------
         token = create_access_token(
             {
                 "email": email,
@@ -212,8 +241,10 @@ async def google_login(data: dict):
             },
         }
 
-    except Exception as e:
+    except HTTPException as http_error:
+        raise http_error
 
+    except Exception as e:
         logger.exception(f"Google login failed: {e}")
 
         raise HTTPException(

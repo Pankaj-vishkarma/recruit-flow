@@ -12,18 +12,37 @@ from app.config.database import candidates_collection
 
 from app.utils.logger import get_logger
 
+from datetime import datetime
+from bson import ObjectId
+
 router = APIRouter(prefix="/schedule", tags=["Schedule"])
 
 logger = get_logger()
 
-# --------------------------------------------------
-# Rate limiter setup
-# --------------------------------------------------
 limiter = Limiter(key_func=get_remote_address)
 
 
 # --------------------------------------------------
-# Schedule Interview Endpoint (Candidate Only)
+# Helper: Mongo serialization
+# --------------------------------------------------
+def serialize_mongo(obj):
+    if isinstance(obj, list):
+        return [serialize_mongo(i) for i in obj]
+
+    if isinstance(obj, dict):
+        new_obj = {}
+        for k, v in obj.items():
+            if isinstance(v, ObjectId):
+                new_obj[k] = str(v)
+            else:
+                new_obj[k] = serialize_mongo(v)
+        return new_obj
+
+    return obj
+
+
+# --------------------------------------------------
+# Schedule Interview Endpoint
 # --------------------------------------------------
 @router.post("/")
 @limiter.limit("5/minute")
@@ -32,64 +51,110 @@ async def schedule_interview(
     data: Dict[str, Any],
     user: dict = Depends(get_current_candidate_user),
 ) -> Dict[str, Any]:
-    """
-    Schedule interview endpoint.
-
-    Called by frontend calendar UI.
-    """
 
     try:
-
+        # -----------------------------
+        # Validate input
+        # -----------------------------
         slot = data.get("slot")
-
-        # --------------------------------------------------
-        # Candidate identity from JWT
-        # --------------------------------------------------
-        candidate_name = user["email"]
 
         if not slot or not isinstance(slot, str) or not slot.strip():
             raise HTTPException(status_code=400, detail="Slot is required")
 
         slot = slot.strip()
 
-        logger.info(f"Scheduling interview for {candidate_name} at {slot}")
+        # -----------------------------
+        # Get user email from token
+        # -----------------------------
+        candidate_email = user.get("email")
 
-        # ------------------------------------
+        if not candidate_email:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid user token (email missing)",
+            )
+
+        logger.info(f"Scheduling interview for {candidate_email} at {slot}")
+
+        # -----------------------------
+        # ✅ AUTO CREATE CANDIDATE (FIX)
+        # -----------------------------
+        existing_candidate = candidates_collection.find_one({"email": candidate_email})
+
+        if not existing_candidate:
+            logger.info(f"Creating new candidate for {candidate_email}")
+
+            new_candidate = {
+                "email": candidate_email,
+                "name": candidate_email.split("@")[0],
+                "role": "candidate",
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+            }
+
+            candidates_collection.insert_one(new_candidate)
+
+            existing_candidate = candidates_collection.find_one(
+                {"email": candidate_email}
+            )
+
+        # -----------------------------
         # Build workflow state
-        # ------------------------------------
+        # -----------------------------
         state = {
             "messages": [f"Schedule interview at {slot}"],
-            "candidate_name": candidate_name,
-            "candidate_data": {},
+            "candidate_name": candidate_email,
+            "candidate_data": existing_candidate,
             "current_step": "schedule",
-            "selected_slot": slot,  # IMPORTANT: pass frontend slot
+            "selected_slot": slot,
         }
 
-        # ------------------------------------
+        # -----------------------------
         # Run scheduler agent
-        # ------------------------------------
-        result = await scheduler_agent(state)
+        # -----------------------------
+        try:
+            result = await scheduler_agent(state)
+        except Exception as agent_error:
+            logger.exception(f"Scheduler agent failed: {agent_error}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to process scheduling logic",
+            )
 
-        # ------------------------------------
-        # Save scheduled interview in DB
-        # ------------------------------------
+        # -----------------------------
+        # Update DB safely
+        # -----------------------------
         candidates_collection.update_one(
-            {"email": candidate_name}, {"$set": {"scheduled_time": slot}}, upsert=True
+            {"email": candidate_email},
+            {
+                "$set": {
+                    "scheduled_time": slot,
+                    "updated_at": datetime.utcnow(),
+                }
+            },
         )
 
-        logger.info("Interview scheduling completed")
+        logger.info("Interview scheduling completed successfully")
 
+        # -----------------------------
+        # Serialize Mongo result
+        # -----------------------------
+        safe_result = serialize_mongo(result)
+
+        # -----------------------------
+        # Final Response
+        # -----------------------------
         return {
-            "status": "success",
+            "success": True,
+            "message": "Interview scheduled successfully",
             "scheduled_slot": slot,
-            "data": result,
+            "data": safe_result,
         }
 
     except HTTPException as http_error:
         raise http_error
 
     except Exception as e:
-
         logger.exception(f"Schedule endpoint failed: {e}")
 
         raise HTTPException(

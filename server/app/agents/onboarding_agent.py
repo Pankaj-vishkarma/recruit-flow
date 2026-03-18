@@ -12,27 +12,56 @@ logger = logging.getLogger(__name__)
 def onboarding_agent(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Onboarding Agent
-
-    Responsibilities:
-    - Create employee directory using Bash tool
-    - Generate welcome file
-    - Verify onboarding environment
-    - Update workflow state
-    - Persist onboarding status
-
-    Production features:
-    - OS compatible
-    - crash protection
-    - bash retry
-    - safe folder naming
-    - verification with shell
     """
 
     try:
 
         # --------------------------------------------------
+        # 🔥 CRITICAL FIX 1: STRICT GUARD (NO RANDOM ONBOARDING)
+        # --------------------------------------------------
+
+        if not state.get("scheduled_time"):
+            logger.info("❌ No interview scheduled → onboarding blocked")
+
+            messages = state.get("messages", [])
+
+            return {
+                **state,
+                "messages": messages
+                + [
+                    {
+                        "role": "assistant",
+                        "content": "Please schedule your interview first before onboarding.",
+                    }
+                ],
+            }
+
+        # --------------------------------------------------
+        # 🔥 CRITICAL FIX 2: PREVENT REPEATED ONBOARDING MESSAGE
+        # --------------------------------------------------
+
+        if state.get("onboarding_complete"):
+            logger.info(
+                "✅ Onboarding already completed → skipping duplicate execution"
+            )
+
+            messages = state.get("messages", [])
+
+            return {
+                **state,
+                "messages": messages
+                + [
+                    {
+                        "role": "assistant",
+                        "content": "Your onboarding is already completed.",
+                    }
+                ],
+            }
+
+        # --------------------------------------------------
         # Validate candidate name
         # --------------------------------------------------
+
         name = state.get("candidate_name", "candidate")
 
         if not isinstance(name, str) or not name.strip():
@@ -45,25 +74,18 @@ def onboarding_agent(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"Starting onboarding for candidate: {safe_name}")
 
         # --------------------------------------------------
-        # Create employee directory using Bash tool
+        # Create employee directory
         # --------------------------------------------------
-        try:
 
-            mkdir_command = f"mkdir -p {folder}"
+        mkdir_command = f"mkdir -p {folder}"
+        result = run_bash_command(mkdir_command)
 
-            result = run_bash_command(mkdir_command)
-
-            logger.info(f"Bash mkdir result: {result}")
-
-        except Exception as dir_error:
-
-            logger.error(f"Failed creating employee directory: {dir_error}")
-
-            raise dir_error
+        logger.info(f"Bash mkdir result: {result}")
 
         # --------------------------------------------------
         # Create welcome file
         # --------------------------------------------------
+
         welcome_path = os.path.join(folder, "welcome.txt")
 
         welcome_content = f"""
@@ -78,72 +100,77 @@ Best Regards,
 HR Team
 """
 
-        try:
-
-            logger.info("Creating welcome file")
-
-            create_file(welcome_path, welcome_content)
-
-        except Exception as file_error:
-
-            logger.error(f"Failed creating welcome file: {file_error}")
-
-            raise file_error
+        create_file(welcome_path, welcome_content)
 
         # --------------------------------------------------
-        # Verify onboarding using shell command
+        # Verify onboarding
         # --------------------------------------------------
-        try:
 
+        try:
             verify_command = f"ls -la {folder}"
-
             verification_output = run_bash_command(verify_command)
-
-            logger.info(f"Verification output: {verification_output}")
-
-        except Exception as verify_error:
-
-            logger.warning(f"Verification failed: {verify_error}")
-
+        except Exception:
             verification_output = "verification_failed"
 
         # --------------------------------------------------
-        # Save onboarding status in database
+        # Save onboarding status
         # --------------------------------------------------
-        try:
 
-            save_candidate_data(
-                name,
-                {
-                    "onboarding_complete": True,
-                    "employee_directory": folder,
-                },
-            )
+        save_candidate_data(
+            name,
+            {
+                "onboarding_complete": True,
+                "employee_directory": folder,
+            },
+        )
 
-            logger.info("Onboarding status saved to database")
-
-        except Exception as db_error:
-
-            logger.warning(f"Failed to save onboarding status: {db_error}")
+        logger.info("Onboarding status saved to database")
 
         # --------------------------------------------------
-        # Update workflow state
+        # 🔥 CRITICAL FIX 3: UPDATE STATE SAFELY
         # --------------------------------------------------
-        state["onboarding_complete"] = True
-        state["employee_directory"] = folder
-        state["onboarding_verification"] = verification_output
-        state["current_step"] = "completed"
+
+        updated_state = {
+            **state,
+            "onboarding_complete": True,
+            "employee_directory": folder,
+            "onboarding_verification": verification_output,
+            "current_step": "completed",
+        }
 
         logger.info("Onboarding process completed successfully")
 
-        return state
+        # --------------------------------------------------
+        # Response
+        # --------------------------------------------------
+
+        messages = state.get("messages", [])
+
+        updated_state["messages"] = messages + [
+            {
+                "role": "assistant",
+                "content": f"🎉 Congratulations {name}! Your onboarding is complete.\n\nYour workspace has been set up successfully.",
+            }
+        ]
+
+        return updated_state
 
     except Exception as e:
 
         logger.exception(f"Onboarding agent failed: {e}")
 
-        state["onboarding_complete"] = False
-        state["onboarding_error"] = str(e)
-        state["current_step"] = "completed"
+        messages = state.get("messages", [])
 
-        return state
+        return {
+            **state,
+            "onboarding_complete": False,
+            "onboarding_error": str(e),
+            "current_step": "completed",
+            "messages": messages
+            + [
+                {
+                    "role": "assistant",
+                    "content": "Something went wrong during onboarding. Please try again.",
+                }
+            ],
+        }

@@ -50,16 +50,35 @@ export default function CandidateProfilePage() {
 
         try {
 
-            await updateCandidateProfile(profile);
+            const payload = {
+                name: profile.name || "",
+                experience: profile.experience || "",
+                skills: Array.isArray(profile.skills)
+                    ? profile.skills
+                    : profile.skills
+                        ?.split(",")
+                        .map(s => s.trim())
+                        .filter(Boolean)
+            };
+
+            console.log("🚀 SENDING PAYLOAD:", payload);
+
+            const res = await updateCandidateProfile(payload);
+
+            console.log("🔥 API RESPONSE:", res);
+
+            if (!res || !res.success) {
+                throw new Error(res?.message || "Update failed");
+            }
+
             alert("Profile updated successfully");
 
         } catch (err) {
 
-            console.error(err);
-            alert("Profile update failed");
+            console.error("❌ UPDATE ERROR:", err);
+            alert(err.message || "Profile update failed");
 
         }
-
     };
 
     if (loading) {
@@ -148,7 +167,11 @@ export default function CandidateProfilePage() {
 
                     <input
                         name="skills"
-                        value={profile.skills || ""}
+                        value={
+                            Array.isArray(profile.skills)
+                                ? profile.skills.join(", ")
+                                : profile.skills || ""
+                        }
                         onChange={handleChange}
                         className="bg-black/40 border border-gray-700 text-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
                     />

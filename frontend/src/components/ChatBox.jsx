@@ -125,7 +125,11 @@ export default function ChatBox() {
 
             const res = await sendMessage(messageToSend);
 
-            const responseText = res?.reply || "No response from AI";
+            const responseText =
+                res?.reply ||
+                res?.data?.reply ||
+                res?.message ||
+                "No response from AI";
 
             const botMessage = {
                 role: "assistant",

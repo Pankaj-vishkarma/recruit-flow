@@ -1,5 +1,5 @@
 import asyncio
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 from fastapi import APIRouter, HTTPException, Request, Depends
 
@@ -20,15 +20,7 @@ from app.services.interview_service import detect_skills
 router = APIRouter()
 logger = get_logger()
 
-# --------------------------------------------------
-# Rate limiter setup
-# --------------------------------------------------
-
 limiter = Limiter(key_func=get_remote_address)
-
-# --------------------------------------------------
-# Build LangGraph once
-# --------------------------------------------------
 
 graph = build_graph()
 
@@ -39,64 +31,26 @@ graph = build_graph()
 
 
 def format_response(state: Dict[str, Any]) -> str:
-    """
-    Convert LangGraph state into human friendly message
-    """
-
     try:
-
-        candidate_data = state.get("candidate_data", {}) or {}
-        skills = candidate_data.get("skills", []) or []
-
-        scheduled = state.get("scheduled_time")
-        onboarding = state.get("onboarding_complete")
-
         messages = state.get("messages", []) or []
 
-        # Skills detected
+        for msg in reversed(messages):
+            if isinstance(msg, dict) and msg.get("role") == "assistant":
+                content = str(msg.get("content", "")).strip()
+                if content:
+                    return content
 
-        if skills:
+        if state.get("scheduled_time"):
+            return f"📅 Interview scheduled for {state['scheduled_time']}."
 
-            skills_text = ", ".join(skills)
-
-            return (
-                f"✅ Skills detected: {skills_text}.\n\n"
-                f"Next step: Technical Interview."
-            )
-
-        # Interview question
-
-        if messages:
-
-            last_msg = messages[-1]
-
-            if isinstance(last_msg, dict):
-                content = str(last_msg.get("content", ""))
-            else:
-                content = str(last_msg)
-
-            if "?" in content:
-                return content
-
-        # Interview scheduled
-
-        if scheduled:
-
-            return f"📅 Interview scheduled for {scheduled}."
-
-        # Onboarding
-
-        if onboarding:
-
+        if state.get("onboarding_complete"):
             return "🎉 Congratulations! Your onboarding has been completed."
 
-        return "Processing your request..."
+        return "No response from AI"
 
     except Exception as e:
-
         logger.exception(f"Response formatting failed: {e}")
-
-        return "Something went wrong while processing your request."
+        return "Something went wrong"
 
 
 # --------------------------------------------------
@@ -114,126 +68,118 @@ async def chat(
 
     try:
 
-        message = payload.message
+        message = str(payload.message).strip()
         candidate_name = user["email"]
 
-        if not message or not str(message).strip():
-
+        if not message:
             raise HTTPException(status_code=400, detail="Message is required")
-
-        message = str(message).strip()
 
         logger.info(f"Chat message received from {candidate_name}")
 
-        # Detect skills
+        # --------------------------------------------------
+        # 🔥 SKILLS DETECTION
+        # --------------------------------------------------
 
         detected_skills = detect_skills(message)
 
-        candidate_data = {}
+        existing_skills = []
+        try:
+            history = get_chat_history(candidate_name)
 
-        if detected_skills:
-            candidate_data["skills"] = detected_skills
+            for msg in history or []:
+                content = str(msg.get("content", "")).lower()
+                existing_skills.extend(detect_skills(content))
+
+        except Exception:
+            pass
+
+        candidate_data = {"skills": list(set(existing_skills + detected_skills))}
 
         # --------------------------------------------------
-        # Retrieve memory
+        # 🔥 ONLY CURRENT MESSAGE (IMPORTANT FIX)
         # --------------------------------------------------
 
-        history = get_chat_history(candidate_name)
-
-        messages: List[Dict[str, Any]] = []
-
-        for msg in (history or [])[-10:]:
-
-            messages.append(
-                {
-                    "role": msg.get("role", "user"),
-                    "content": msg.get("content", ""),
-                }
-            )
-
-        # Add new user message
-
-        messages.append(
+        messages = [
             {
                 "role": "user",
                 "content": message,
             }
-        )
+        ]
 
-        # Save message to memory
+        # --------------------------------------------------
+        # 🔥 SAVE USER MESSAGE
+        # --------------------------------------------------
 
         try:
             append_chat_message(candidate_name, "user", message)
-        except Exception as mem_error:
-            logger.warning(f"Memory save failed: {mem_error}")
+        except Exception:
+            pass
 
         # --------------------------------------------------
-        # Graph state
+        # 🔥 CLEAN STATE (NO HISTORY INFERENCE)
         # --------------------------------------------------
 
         state: Dict[str, Any] = {
             "messages": messages,
             "candidate_name": candidate_name,
             "candidate_data": candidate_data,
-            "current_step": "research",
+            "current_step": "screen",  # always start clean
+            "scheduled_time": None,
+            "onboarding_complete": False,
         }
 
         # --------------------------------------------------
-        # Execute AI graph
+        # 🔥 EXECUTE GRAPH
         # --------------------------------------------------
 
         try:
-
             result = await asyncio.wait_for(graph.ainvoke(state), timeout=30)
 
         except asyncio.TimeoutError:
+            raise HTTPException(status_code=504, detail="AI timeout")
 
-            logger.error("AI workflow timeout")
+        except Exception as e:
+            logger.exception(f"Graph error: {e}")
+            raise HTTPException(status_code=500, detail="AI failed")
 
-            raise HTTPException(status_code=504, detail="AI processing timeout")
-
-        except Exception as graph_error:
-
-            logger.exception(f"LangGraph error: {graph_error}")
-
-            raise HTTPException(
-                status_code=500,
-                detail="AI workflow execution failed",
-            )
-
-        logger.info(f"LangGraph completed for {candidate_name}")
+        final_state = result if isinstance(result, dict) else {}
 
         # --------------------------------------------------
-        # Format reply
+        # 🔥 REMOVE DUPLICATES (SAFETY FIX)
         # --------------------------------------------------
 
-        reply = format_response(result)
+        unique_messages = []
+        seen = set()
 
-        # Save assistant reply
+        for msg in final_state.get("messages", []):
+            key = (msg.get("role"), msg.get("content"))
+            if key not in seen:
+                seen.add(key)
+                unique_messages.append(msg)
+
+        final_state["messages"] = unique_messages
+
+        logger.info(f"FINAL STATE: {final_state}")
+
+        # --------------------------------------------------
+        # 🔥 RESPONSE
+        # --------------------------------------------------
+
+        reply = format_response(final_state)
+
+        if not reply:
+            reply = "Tell me about your skills or ask to schedule an interview."
 
         try:
             append_chat_message(candidate_name, "assistant", reply)
-        except Exception as mem_error:
-            logger.warning(f"Memory save failed: {mem_error}")
+        except Exception:
+            pass
 
-        # --------------------------------------------------
-        # Return CLEAN response
-        # --------------------------------------------------
+        return ChatResponse(status="success", reply=reply)
 
-        return ChatResponse(
-            status="success",
-            reply=reply,
-        )
-
-    except HTTPException as http_error:
-
-        raise http_error
+    except HTTPException:
+        raise
 
     except Exception as e:
-
-        logger.exception(f"Chat endpoint failed: {e}")
-
-        raise HTTPException(
-            status_code=500,
-            detail="Internal server error",
-        )
+        logger.exception(f"Chat failed: {e}")
+        raise HTTPException(status_code=500, detail="Internal error")

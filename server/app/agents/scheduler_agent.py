@@ -15,16 +15,11 @@ logger = logging.getLogger(__name__)
 # Slot Detection Utility
 # --------------------------------------------------
 def detect_slot_from_message(message: str) -> str:
-    """
-    Extract interview slot from user message using simple NLP patterns.
-    """
-
     try:
 
         if not message:
             return settings.DEFAULT_INTERVIEW_SLOT
 
-        # ensure message is string
         if not isinstance(message, str):
             message = str(message)
 
@@ -45,9 +40,7 @@ def detect_slot_from_message(message: str) -> str:
         return settings.DEFAULT_INTERVIEW_SLOT
 
     except Exception as e:
-
         logger.warning(f"Slot detection failed: {e}")
-
         return settings.DEFAULT_INTERVIEW_SLOT
 
 
@@ -55,16 +48,6 @@ def detect_slot_from_message(message: str) -> str:
 # Scheduler Agent
 # --------------------------------------------------
 async def scheduler_agent(state: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Scheduler Agent
-
-    Responsibilities:
-    - Detect preferred interview slot
-    - Decide when to use Computer Use Tool
-    - Trigger calendar automation
-    - Persist scheduling information
-    """
-
     try:
 
         if not isinstance(state, dict):
@@ -74,111 +57,94 @@ async def scheduler_agent(state: Dict[str, Any]) -> Dict[str, Any]:
         messages = state.get("messages", [])
 
         if not isinstance(messages, list) or not messages:
-
             logger.warning("Scheduler agent received empty messages list")
 
-            state["schedule_error"] = "No messages found"
-            state["current_step"] = "onboard"
-
-            return state
+            return {
+                **state,
+                "schedule_error": "No messages found",
+                "current_step": "schedule",
+            }
 
         # -----------------------------------
-        # Extract latest message safely
+        # Extract latest message
         # -----------------------------------
         last_message = messages[-1]
 
         if isinstance(last_message, dict):
-
             message = str(last_message.get("content", "")).strip()
-
         else:
-
             message = str(last_message).strip()
 
         logger.info(f"Scheduler processing message: {message}")
 
+        lower_msg = message.lower()
+
         # -----------------------------------
-        # Prefer slot from frontend selection
+        # 🔥 Intent check
+        # -----------------------------------
+        if not any(word in lower_msg for word in ["schedule", "book", "slot"]):
+            logger.info("❌ No scheduling intent → skipping scheduler")
+            return state
+
+        # -----------------------------------
+        # 🔥 Prevent duplicate scheduling (FIXED)
+        # -----------------------------------
+        if state.get("scheduled_time"):
+
+            logger.info("✅ Already scheduled")
+
+            return {
+                **state,
+                "messages": [
+                    {
+                        "role": "assistant",
+                        "content": f"Your interview is already scheduled for {state['scheduled_time']}.",
+                    }
+                ],
+                "current_step": "schedule",
+            }
+
+        # -----------------------------------
+        # Slot detection
         # -----------------------------------
         slot = state.get("selected_slot")
 
         if slot and isinstance(slot, str) and slot.strip():
-
             slot = slot.strip()
-
-            logger.info(f"Using frontend selected slot: {slot}")
-
+            logger.info(f"Using frontend slot: {slot}")
         else:
-
             slot = detect_slot_from_message(message)
-
-            logger.info(f"Detected interview slot from message: {slot}")
-
-        # -----------------------------------
-        # Prevent duplicate scheduling
-        # -----------------------------------
-        if state.get("scheduled_time"):
-
-            logger.info("Interview already scheduled. Skipping automation.")
-
-            state["current_step"] = "onboard"
-
-            return state
+            logger.info(f"Detected slot: {slot}")
 
         # -----------------------------------
-        # Tool Decision (Assignment Requirement)
-        # Agent decides to use Computer Use Tool
-        # -----------------------------------
-        logger.info("Scheduler agent selecting tool: computer_use_tool")
-
-        # -----------------------------------
-        # Calendar automation with retry
+        # Calendar automation
         # -----------------------------------
         automation_result = None
 
         for attempt in range(2):
-
             try:
-
                 automation_result = await click_calendar(slot)
 
-                logger.info(
-                    f"Calendar automation result (attempt {attempt+1}): {automation_result}"
-                )
+                logger.info(f"Attempt {attempt+1}: {automation_result}")
 
                 if (
                     isinstance(automation_result, dict)
                     and automation_result.get("status") == "success"
                 ):
-
                     break
 
-            except Exception as calendar_error:
+            except Exception as e:
+                logger.warning(f"Attempt {attempt+1} failed: {e}")
 
-                logger.warning(
-                    f"Calendar automation attempt {attempt+1} failed: {calendar_error}"
-                )
-
-        if (
-            not automation_result
-            or not isinstance(automation_result, dict)
-            or automation_result.get("status") != "success"
-        ):
-
-            logger.warning("Calendar automation did not confirm success")
+        if not automation_result or automation_result.get("status") != "success":
+            logger.warning("Calendar automation not confirmed")
 
         # -----------------------------------
         # Update state
         # -----------------------------------
-        state["scheduled_time"] = slot
-
-        # -----------------------------------
-        # Persist scheduling info
-        # -----------------------------------
         candidate_name = state.get("candidate_name", "candidate")
 
         try:
-
             save_candidate_data(
                 candidate_name,
                 {
@@ -186,44 +152,49 @@ async def scheduler_agent(state: Dict[str, Any]) -> Dict[str, Any]:
                     "status": "scheduled",
                 },
             )
+        except Exception as e:
+            logger.warning(f"DB save failed: {e}")
 
-            logger.info("Candidate interview schedule saved to database")
-
-        except Exception as db_error:
-
-            logger.warning(f"Failed to save schedule in DB: {db_error}")
-
-        # -----------------------------------
-        # Save message to memory
-        # -----------------------------------
         try:
-
             append_chat_message(
                 candidate_name,
                 "system",
                 f"Interview scheduled for {slot}",
             )
-
-        except Exception as mem_error:
-
-            logger.warning(f"Failed to store scheduling memory: {mem_error}")
+        except Exception as e:
+            logger.warning(f"Memory save failed: {e}")
 
         logger.info(f"Interview scheduled successfully for {slot}")
 
         # -----------------------------------
-        # Move workflow forward
+        # 🔥 FINAL STATE RETURN (IMMUTABLE FIX)
         # -----------------------------------
-        state["current_step"] = "onboard"
-
-        return state
+        return {
+            **state,
+            "scheduled_time": slot,
+            "current_step": "schedule",
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": f"📅 Your interview has been successfully scheduled for {slot}.",
+                }
+            ],
+        }
 
     except Exception as e:
 
         logger.exception(f"Scheduler agent failed: {e}")
 
-        if isinstance(state, dict):
-            state["schedule_error"] = str(e)
-            state["current_step"] = "onboard"
-            return state
+        messages = state.get("messages", [])
 
-        return {"schedule_error": str(e), "current_step": "onboard"}
+        return {
+            **state,
+            "schedule_error": str(e),
+            "current_step": "schedule",
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": "Something went wrong while scheduling your interview.",
+                }
+            ],
+        }

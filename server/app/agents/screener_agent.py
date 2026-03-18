@@ -10,23 +10,29 @@ logger = logging.getLogger(__name__)
 def screener_agent(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Screener Agent
-
-    Responsibilities:
-    - Extract candidate skills from message
-    - Store skills in state
-    - Persist candidate data in MongoDB
-    - Move workflow to technical interview step
     """
 
     try:
+        # -----------------------------
         # Safe message extraction
-        messages: List[str] = state.get("messages", [])
+        # -----------------------------
+        messages: List[Dict[str, Any]] = state.get("messages", [])
 
         if not messages:
             logger.warning("No messages found in state.")
             return state
 
-        message = messages[-1]
+        last_msg = messages[-1]
+
+        # 🔥 FIX: extract correct text
+        if isinstance(last_msg, dict):
+            message = str(last_msg.get("content", "")).strip()
+        else:
+            message = str(last_msg).strip()
+
+        if not message:
+            logger.warning("Empty message received in screener.")
+            return state
 
         # Candidate name
         name = state.get("candidate_name", "candidate")
@@ -35,10 +41,11 @@ def screener_agent(state: Dict[str, Any]) -> Dict[str, Any]:
         if "candidate_data" not in state:
             state["candidate_data"] = {}
 
-        # Detect skills using NLP service
+        # -----------------------------
+        # Detect skills
+        # -----------------------------
         skills = detect_skills(message)
 
-        # Remove duplicates and normalize
         if skills:
             skills = list(set([skill.lower() for skill in skills]))
         else:
@@ -47,22 +54,42 @@ def screener_agent(state: Dict[str, Any]) -> Dict[str, Any]:
         # Update state
         state["candidate_data"]["skills"] = skills
 
-        # Save to database
+        # Save to DB
         save_candidate_data(
             name, {"name": name, "skills": skills, "status": "technical_interview"}
         )
 
         # Move workflow forward
-        state["current_step"] = "tech"
+        state["current_step"] = "screen"
 
-        logger.info(f"Screener Agent processed candidate: {name} | Skills: {skills}")
+        logger.info(f"Screener processed: {name} | Skills: {skills}")
+
+        # --------------------------------------------------
+        # 🔥 CRITICAL FIX: Add AI response (IMMUTABLE)
+        # --------------------------------------------------
+
+        if skills:
+            response_text = f"Great! I detected your skills: {', '.join(skills)}.\nLet's proceed to the technical interview."
+        else:
+            response_text = "I couldn't detect specific skills. Could you tell me your technical skills?"
+
+        state["messages"] = messages + [{"role": "assistant", "content": response_text}]
 
         return state
 
     except Exception as e:
         logger.exception(f"Screener agent failed: {e}")
 
-        # Fail-safe fallback
+        # fallback response
+        messages = state.get("messages", [])
+
+        state["messages"] = messages + [
+            {
+                "role": "assistant",
+                "content": "Something went wrong while screening your profile.",
+            }
+        ]
+
         state["current_step"] = "tech"
 
         return state
