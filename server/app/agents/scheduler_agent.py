@@ -7,6 +7,8 @@ from app.tools.memory_tool import (
     save_candidate_data,
     append_chat_message,
 )
+from app.config.database import users_collection
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +20,7 @@ def detect_slot_from_message(message: str) -> str:
     try:
 
         if not message:
-            return settings.DEFAULT_INTERVIEW_SLOT
+            return "Monday 10:00 AM"  # 🔥 FIXED
 
         if not isinstance(message, str):
             message = str(message)
@@ -37,11 +39,11 @@ def detect_slot_from_message(message: str) -> str:
             if day in message:
                 return slot
 
-        return settings.DEFAULT_INTERVIEW_SLOT
+        return "Monday 10:00 AM"  # 🔥 FIXED
 
     except Exception as e:
         logger.warning(f"Slot detection failed: {e}")
-        return settings.DEFAULT_INTERVIEW_SLOT
+        return "Monday 10:00 AM"  # 🔥 FIXED
 
 
 # --------------------------------------------------
@@ -79,6 +81,11 @@ async def scheduler_agent(state: Dict[str, Any]) -> Dict[str, Any]:
 
         lower_msg = message.lower()
 
+        # 🔥 Handle reschedule
+        if "reschedule" in lower_msg or "re schedule" in lower_msg:
+            logger.info("🔁 Rescheduling interview")
+            state["scheduled_time"] = None
+
         # -----------------------------------
         # 🔥 Intent check
         # -----------------------------------
@@ -87,15 +94,18 @@ async def scheduler_agent(state: Dict[str, Any]) -> Dict[str, Any]:
             return state
 
         # -----------------------------------
-        # 🔥 Prevent duplicate scheduling (FIXED)
+        # 🔥 Prevent duplicate scheduling
         # -----------------------------------
-        if state.get("scheduled_time"):
+        if state.get("scheduled_time") and not (
+            "reschedule" in lower_msg or "re schedule" in lower_msg
+        ):
 
             logger.info("✅ Already scheduled")
 
             return {
                 **state,
-                "messages": [
+                "messages": state.get("messages", [])
+                + [  # 🔥 FIXED
                     {
                         "role": "assistant",
                         "content": f"Your interview is already scheduled for {state['scheduled_time']}.",
@@ -140,11 +150,12 @@ async def scheduler_agent(state: Dict[str, Any]) -> Dict[str, Any]:
             logger.warning("Calendar automation not confirmed")
 
         # -----------------------------------
-        # Update state
+        # 🔥 Update DB (CRITICAL FIX)
         # -----------------------------------
         candidate_name = state.get("candidate_name", "candidate")
 
         try:
+            # ✅ FIXED: correct function usage
             save_candidate_data(
                 candidate_name,
                 {
@@ -154,6 +165,20 @@ async def scheduler_agent(state: Dict[str, Any]) -> Dict[str, Any]:
             )
         except Exception as e:
             logger.warning(f"DB save failed: {e}")
+
+        try:
+            # ✅ ALSO update users collection (VERY IMPORTANT)
+            users_collection.update_one(
+                {"email": candidate_name},
+                {
+                    "$set": {
+                        "scheduled_time": slot,
+                        "updated_at": datetime.utcnow(),
+                    }
+                },
+            )
+        except Exception as e:
+            logger.warning(f"Users collection update failed: {e}")
 
         try:
             append_chat_message(
@@ -167,13 +192,14 @@ async def scheduler_agent(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"Interview scheduled successfully for {slot}")
 
         # -----------------------------------
-        # 🔥 FINAL STATE RETURN (IMMUTABLE FIX)
+        # 🔥 FINAL STATE RETURN
         # -----------------------------------
         return {
             **state,
             "scheduled_time": slot,
             "current_step": "schedule",
-            "messages": [
+            "messages": state.get("messages", [])
+            + [  # 🔥 FIXED
                 {
                     "role": "assistant",
                     "content": f"📅 Your interview has been successfully scheduled for {slot}.",
@@ -185,13 +211,12 @@ async def scheduler_agent(state: Dict[str, Any]) -> Dict[str, Any]:
 
         logger.exception(f"Scheduler agent failed: {e}")
 
-        messages = state.get("messages", [])
-
         return {
             **state,
             "schedule_error": str(e),
             "current_step": "schedule",
-            "messages": [
+            "messages": state.get("messages", [])
+            + [  # 🔥 FIXED
                 {
                     "role": "assistant",
                     "content": "Something went wrong while scheduling your interview.",

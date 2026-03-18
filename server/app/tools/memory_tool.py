@@ -47,7 +47,7 @@ def save_candidate_data(name: str, data: Dict[str, Any]) -> bool:
         payload["updated_at"] = datetime.utcnow()
 
         candidates_collection.update_one(
-            {"name": name},
+            {"email": name},
             {
                 "$set": payload,
                 "$setOnInsert": {
@@ -60,7 +60,7 @@ def save_candidate_data(name: str, data: Dict[str, Any]) -> bool:
             upsert=True,
         )
 
-        logger.info(f"Candidate data saved/updated successfully for: {name}")
+        logger.info(f"Candidate data saved/updated successfully for: {name} (email)")
         return True
 
     except Exception as e:
@@ -82,7 +82,7 @@ def get_candidate_data(name: str) -> Dict[str, Any]:
 
     try:
 
-        candidate = candidates_collection.find_one({"name": name}, {"_id": 0})
+        candidate = candidates_collection.find_one({"email": name}, {"_id": 0})
 
         if candidate:
             logger.info(f"Candidate data fetched for: {name}")
@@ -115,7 +115,7 @@ def update_candidate_fields(name: str, fields: Dict[str, Any]) -> bool:
             add_candidate_skills(name, skills)
 
         candidates_collection.update_one(
-            {"name": name}, {"$set": {**fields, "updated_at": datetime.utcnow()}}
+            {"email": name}, {"$set": {**fields, "updated_at": datetime.utcnow()}}
         )
 
         logger.info(f"Candidate fields updated for: {name}")
@@ -139,7 +139,7 @@ def candidate_exists(name: str) -> bool:
 
     try:
 
-        candidate = candidates_collection.find_one({"name": name}, {"_id": 1})
+        candidate = candidates_collection.find_one({"email": name}, {"_id": 1})
 
         return candidate is not None
 
@@ -164,7 +164,7 @@ def append_chat_message(name: str, role: str, content: str) -> bool:
         message = {"role": role, "content": content, "timestamp": datetime.utcnow()}
 
         candidates_collection.update_one(
-            {"name": name},
+            {"email": name},
             {
                 "$push": {"chat_history": message},
                 "$set": {"updated_at": datetime.utcnow()},
@@ -197,7 +197,7 @@ def get_chat_history(name: str) -> List[Dict[str, Any]]:
     try:
 
         candidate = candidates_collection.find_one(
-            {"name": name}, {"chat_history": 1, "_id": 0}
+            {"email": name}, {"chat_history": 1, "_id": 0}
         )
 
         if candidate and "chat_history" in candidate:
@@ -227,7 +227,7 @@ def add_candidate_skills(name: str, skills: List[str]) -> bool:
             skills = [skills]
 
         candidates_collection.update_one(
-            {"name": name},
+            {"email": name},
             {
                 "$addToSet": {"skills": {"$each": skills}},
                 "$set": {"updated_at": datetime.utcnow()},
@@ -272,7 +272,7 @@ def add_interview_record(
         }
 
         candidates_collection.update_one(
-            {"name": name},
+            {"email": name},
             {
                 "$push": {"interview_history": record},
                 "$set": {"updated_at": datetime.utcnow()},
